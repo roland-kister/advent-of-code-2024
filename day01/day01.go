@@ -1,6 +1,6 @@
 // https://adventofcode.com/2024/day/1
 
-package main
+package day01
 
 import (
 	"bufio"
@@ -10,11 +10,8 @@ import (
 	"strings"
 )
 
-func main() {
-	lefts := make([]int, 0)
-	rights := make([]int, 0)
-
-	loadInput("./input.txt", &lefts, &rights)
+func Run(inputPath string) {
+	lefts, rights := loadInput(inputPath)
 
 	quicksort(lefts, 0, len(lefts)-1)
 	quicksort(rights, 0, len(rights)-1)
@@ -25,7 +22,8 @@ func main() {
 		diff += abs(lefts[i] - rights[i])
 	}
 
-	fmt.Printf("Total distance (Part One): %d\n", diff)
+	fmt.Println("day 1:")
+	fmt.Printf("\tpart 1: %d\n", diff)
 
 	occurMapLen := lefts[len(lefts)-1]
 	if lefts[len(lefts)-1] < rights[len(rights)-1] {
@@ -46,40 +44,7 @@ func main() {
 		simScore += occurMap[left] * left
 	}
 
-	fmt.Printf("Similarity score (Part Two): %d\n", simScore)
-}
-
-func loadInput(inputPath string, lefts *[]int, rights *[]int) {
-	input, err := os.Open(inputPath)
-	if err != nil {
-		panic(err)
-	}
-
-	defer input.Close()
-
-	scanner := bufio.NewScanner(input)
-
-	for scanner.Scan() {
-		words := strings.Split(scanner.Text(), "   ")
-
-		left, err := strconv.Atoi(words[0])
-		if err != nil {
-			panic(err)
-		}
-
-		*lefts = append(*lefts, left)
-
-		right, err := strconv.Atoi(words[1])
-		if err != nil {
-			panic(err)
-		}
-
-		*rights = append(*rights, right)
-	}
-
-	if err := scanner.Err(); err != nil {
-		panic(err)
-	}
+	fmt.Printf("\tpart 2: %d\n", simScore)
 }
 
 func quicksort(slice []int, low int, high int) {
@@ -116,4 +81,42 @@ func abs(num int) int {
 		return num
 	}
 	return -num
+}
+
+func loadInput(inputPath string) ([]int, []int) {
+	lefts := make([]int, 0)
+	rights := make([]int, 0)
+
+	input, err := os.Open(inputPath)
+	if err != nil {
+		panic(err)
+	}
+
+	defer input.Close()
+
+	scanner := bufio.NewScanner(input)
+
+	for scanner.Scan() {
+		words := strings.Split(scanner.Text(), "   ")
+
+		left, err := strconv.Atoi(words[0])
+		if err != nil {
+			panic(err)
+		}
+
+		lefts = append(lefts, left)
+
+		right, err := strconv.Atoi(words[1])
+		if err != nil {
+			panic(err)
+		}
+
+		rights = append(rights, right)
+	}
+
+	if err := scanner.Err(); err != nil {
+		panic(err)
+	}
+
+	return lefts, rights
 }
