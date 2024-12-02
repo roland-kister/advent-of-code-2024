@@ -9,3 +9,15 @@ Save inputs to `./inputs` with leading zero in file name, e.g. `01.txt`, or `13.
     ...
     └─25.txt
 ```
+
+Execute the solution with the following command:
+
+```shell
+go run .
+```
+
+Or to run the tests execute:
+
+```shell
+go test -v ./...
+```
