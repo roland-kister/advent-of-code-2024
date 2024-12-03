@@ -20,6 +20,7 @@ type day02 struct {
 func NewDay02() internal.Solver {
 	return &day02{}
 }
+
 func (d *day02) LoadInput(inputPath string) {
 	d.reps = make([][]int, 0)
 
@@ -86,6 +87,8 @@ func (d *day02) PartTwo() int {
 		}
 	}
 
+	close(safeTolChan)
+
 	return safeTolCount
 }
 
@@ -150,40 +153,4 @@ func removeEl(slice []int, index int) []int {
 	}
 
 	return res
-}
-
-func loadInput(inputPath string) [][]int {
-	reps := make([][]int, 0)
-
-	input, err := os.Open(inputPath)
-	if err != nil {
-		panic(err)
-	}
-
-	defer input.Close()
-
-	scanner := bufio.NewScanner(input)
-
-	for scanner.Scan() {
-		lvls := strings.Split(scanner.Text(), " ")
-
-		rep := make([]int, len(lvls))
-
-		for j, lvl := range lvls {
-			lvlNum, err := strconv.Atoi(lvl)
-			if err != nil {
-				panic(err)
-			}
-
-			rep[j] = lvlNum
-		}
-
-		reps = append(reps, rep)
-	}
-
-	if err := scanner.Err(); err != nil {
-		panic(err)
-	}
-
-	return reps
 }
