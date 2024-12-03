@@ -24,9 +24,9 @@ func main() {
 		solver.LoadInput(fmt.Sprintf("./inputs/%s.txt", dayIndex))
 
 		partOne := solver.PartOne()
-		fmt.Printf("\t part one = %d\n", partOne)
+		fmt.Printf("\tpart one = %d\n", partOne)
 
 		partTwo := solver.PartTwo()
-		fmt.Printf("\t part one = %d\n", partTwo)
+		fmt.Printf("\tpart one = %d\n", partTwo)
 	}
 }
