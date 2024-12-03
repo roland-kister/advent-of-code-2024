@@ -4,11 +4,6 @@ import (
 	"testing"
 )
 
-type inOutPair struct {
-	in  []int
-	out bool
-}
-
 func TestPartOne(t *testing.T) {
 	reps := [][]int{
 		{7, 6, 4, 2, 1},
