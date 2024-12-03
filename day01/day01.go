@@ -4,47 +4,93 @@ package day01
 
 import (
 	"bufio"
-	"fmt"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/roland-kister/advent-of-code-2024/internal"
 )
 
-func Run(inputPath string) {
-	lefts, rights := loadInput(inputPath)
+type day01 struct {
+	lefts  []int
+	rights []int
+}
 
-	quicksort(lefts, 0, len(lefts)-1)
-	quicksort(rights, 0, len(rights)-1)
+func NewDay01() internal.Solver {
+	return &day01{}
+}
+
+func (d *day01) LoadInput(inputPath string) {
+	d.lefts = make([]int, 0)
+	d.rights = make([]int, 0)
+
+	input, err := os.Open(inputPath)
+	if err != nil {
+		panic(err)
+	}
+
+	defer input.Close()
+
+	scanner := bufio.NewScanner(input)
+
+	for scanner.Scan() {
+		words := strings.Split(scanner.Text(), "   ")
+
+		left, err := strconv.Atoi(words[0])
+		if err != nil {
+			panic(err)
+		}
+
+		d.lefts = append(d.lefts, left)
+
+		right, err := strconv.Atoi(words[1])
+		if err != nil {
+			panic(err)
+		}
+
+		d.rights = append(d.rights, right)
+	}
+
+	if err := scanner.Err(); err != nil {
+		panic(err)
+	}
+}
+
+func (d day01) PartOne() int {
+	quicksort(d.lefts, 0, len(d.lefts)-1)
+	quicksort(d.rights, 0, len(d.rights)-1)
 
 	diff := 0
 
-	for i := 0; i < len(lefts); i++ {
-		diff += abs(lefts[i] - rights[i])
+	for i := 0; i < len(d.lefts); i++ {
+		diff += abs(d.lefts[i] - d.rights[i])
 	}
 
-	fmt.Println("day 1:")
-	fmt.Printf("\tpart 1: %d\n", diff)
+	return diff
+}
 
-	occurMapLen := lefts[len(lefts)-1]
-	if lefts[len(lefts)-1] < rights[len(rights)-1] {
-		occurMapLen = rights[len(rights)-1]
+func (d day01) PartTwo() int {
+	quicksort(d.lefts, 0, len(d.lefts)-1)
+	quicksort(d.rights, 0, len(d.rights)-1)
+
+	occurMapLen := d.lefts[len(d.lefts)-1] + 1
+	if d.lefts[len(d.lefts)-1] < d.rights[len(d.rights)-1] {
+		occurMapLen = d.rights[len(d.rights)-1] + 1
 	}
-
-	occurMapLen++
 
 	occurMap := make([]int, occurMapLen)
 
-	for _, right := range rights {
+	for _, right := range d.rights {
 		occurMap[right]++
 	}
 
 	simScore := 0
 
-	for _, left := range lefts {
+	for _, left := range d.lefts {
 		simScore += occurMap[left] * left
 	}
 
-	fmt.Printf("\tpart 2: %d\n", simScore)
+	return simScore
 }
 
 func quicksort(slice []int, low int, high int) {

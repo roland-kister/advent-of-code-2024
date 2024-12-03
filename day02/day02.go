@@ -9,27 +9,69 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/roland-kister/advent-of-code-2024/internal"
 )
 
-func Run(inputPath string) {
-	reps := loadInput(inputPath)
+type day02 struct {
+	reps [][]int
+}
 
+func NewDay02() internal.Solver {
+	return &day02{}
+}
+func (d *day02) LoadInput(inputPath string) {
+	d.reps = make([][]int, 0)
+
+	input, err := os.Open(inputPath)
+	if err != nil {
+		panic(err)
+	}
+
+	defer input.Close()
+
+	scanner := bufio.NewScanner(input)
+
+	for scanner.Scan() {
+		lvls := strings.Split(scanner.Text(), " ")
+
+		rep := make([]int, len(lvls))
+
+		for j, lvl := range lvls {
+			lvlNum, err := strconv.Atoi(lvl)
+			if err != nil {
+				panic(err)
+			}
+
+			rep[j] = lvlNum
+		}
+
+		d.reps = append(d.reps, rep)
+	}
+
+	if err := scanner.Err(); err != nil {
+		panic(err)
+	}
+}
+
+func (d *day02) PartOne() int {
 	safeCount := 0
 
-	for _, rep := range reps {
+	for _, rep := range d.reps {
 		if isRepSafe(rep) {
 			safeCount++
 		}
 	}
 
-	fmt.Println("day 2:")
-	fmt.Printf("\tpart 1: %d\n", safeCount)
+	return safeCount
+}
 
-	safeTolChan := make(chan bool, len(reps))
+func (d *day02) PartTwo() int {
+	safeTolChan := make(chan bool, len(d.reps))
 
 	wg := new(sync.WaitGroup)
 
-	for _, rep := range reps {
+	for _, rep := range d.reps {
 		wg.Add(1)
 		go isRepSafeTol(rep, safeTolChan, wg)
 	}
@@ -38,13 +80,13 @@ func Run(inputPath string) {
 
 	safeTolCount := 0
 
-	for range len(reps) {
+	for range len(d.reps) {
 		if <-safeTolChan {
 			safeTolCount++
 		}
 	}
 
-	fmt.Printf("\tpart 2: %d\n", safeTolCount)
+	return safeTolCount
 }
 
 func isRepSafe(rep []int) bool {
