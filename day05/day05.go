@@ -59,7 +59,18 @@ func (d *Day05) PartOne() int {
 }
 
 func (d *Day05) PartTwo() int {
-	return 0
+	total := 0
+
+	for _, up := range d.ups {
+		if d.validUp(up) {
+			continue
+		}
+
+		d.quickfix(up, 0, len(up)-1)
+		total += up[len(up)/2]
+	}
+
+	return total
 }
 
 func (d *Day05) parsePgOrder(line string) {
@@ -180,4 +191,38 @@ func (p page) binSearch(low, high, prePgNum int) int {
 	}
 
 	return p.binSearch(mid+1, high, prePgNum)
+}
+
+func (d *Day05) quickfix(up update, low, high int) {
+	if low >= high || low < 0 {
+		return
+	}
+
+	p := d.partitionFix(up, low, high)
+
+	d.quickfix(up, low, p-1)
+	d.quickfix(up, p+1, high)
+}
+
+func (d *Day05) partitionFix(up update, low, high int) int {
+	pivot := up[high]
+
+	i := low
+
+	for j := low; j < high; j++ {
+		pg, ok := d.pgMap[up[j]]
+		if !ok {
+			continue
+		}
+
+		if pg.precedes([]int{pivot}) {
+			up[i], up[j] = up[j], up[i]
+
+			i++
+		}
+	}
+
+	up[i], up[high] = up[high], up[i]
+
+	return i
 }
