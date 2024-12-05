@@ -39,42 +39,42 @@ func TestLoadInput(t *testing.T) {
 	d := Day05{}
 	d.LoadInput(strings.NewReader(example))
 
-	page13 := page{
-		num:       13,
-		preceding: []*page{},
-	}
-
-	page29 := page{
-		num:       29,
-		preceding: []*page{&page13},
-	}
-
-	page53 := page{
-		num:       53,
-		preceding: []*page{&page29, &page13},
-	}
-
-	page61 := page{
-		num:       61,
-		preceding: []*page{&page13, &page53, &page29},
-	}
-
-	page47 := page{
-		num:       47,
-		preceding: []*page{&page53, &page13, &page61, &page29},
-	}
-
-	page75 := page{
-		num:       75,
-		preceding: []*page{&page29, &page53, &page47, &page61, &page13},
-	}
-
-	page97 := page{
+	page97 := &page{
 		num:       97,
-		preceding: []*page{&page13, &page61, &page47, &page29, &page53, &page75},
+		preceding: []int{},
 	}
 
-	pgMap := map[int]page{
+	page75 := &page{
+		num:       75,
+		preceding: []int{97},
+	}
+
+	page47 := &page{
+		num:       47,
+		preceding: []int{75, 97},
+	}
+
+	page61 := &page{
+		num:       61,
+		preceding: []int{47, 75, 97},
+	}
+
+	page53 := &page{
+		num:       53,
+		preceding: []int{47, 61, 75, 97},
+	}
+
+	page29 := &page{
+		num:       29,
+		preceding: []int{47, 53, 61, 75, 97},
+	}
+
+	page13 := &page{
+		num:       13,
+		preceding: []int{29, 47, 53, 61, 75, 97},
+	}
+
+	pgMap := map[int]*page{
 		13: page13,
 		29: page29,
 		47: page47,
@@ -118,7 +118,7 @@ func TestPartTwo(t *testing.T) {
 	d := Day05{}
 	d.LoadInput(strings.NewReader(example))
 
-	out := 4
+	out := 123
 	actOut := d.PartTwo()
 
 	if out != actOut {
