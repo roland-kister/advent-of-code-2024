@@ -1,6 +1,6 @@
-# advent-of-code-2024
+# [Advent of Code 2024](https://adventofcode.com/2024)
 
-Save inputs to `./inputs` with leading zero in file name, e.g. `01.txt`, or `13.txt`:
+Save the individual puzzle inputs to `./inputs` directory with leading zero in the file name, e.g. `01.txt`, or `13.txt`:
 
 ```txt
 ./inputs/
@@ -10,14 +10,14 @@ Save inputs to `./inputs` with leading zero in file name, e.g. `01.txt`, or `13.
     └─25.txt
 ```
 
-Execute the solution with the following command:
+Execute the solution:
 
 ```shell
 go run .
 ```
 
-Or to run the tests execute:
+Or run the tests:
 
 ```shell
-go test -v ./...
+go test ./...
 ```

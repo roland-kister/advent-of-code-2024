@@ -25,7 +25,6 @@ func main() {
 
 	for i, solver := range solvers {
 		dayIndex := fmt.Sprintf("%02d", i+1)
-
 		fmt.Printf("day %s:\n", dayIndex)
 
 		input, err := os.Open(fmt.Sprintf("./inputs/%s.txt", dayIndex))
