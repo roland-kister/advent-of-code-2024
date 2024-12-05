@@ -4,10 +4,8 @@ package day04
 
 import (
 	"bufio"
-	"os"
+	"io"
 	"sync"
-
-	"github.com/roland-kister/advent-of-code-2024/internal"
 )
 
 // out of bounds
@@ -15,25 +13,14 @@ const oob = -1
 
 type grid [][]rune
 
-type day04 struct {
+type Day04 struct {
 	g grid
 }
 
-func NewDay04() internal.Solver {
-	return &day04{}
-}
-
-func (d *day04) LoadInput(inputPath string) {
-	input, err := os.Open(inputPath)
-	if err != nil {
-		panic(err)
-	}
-
-	defer input.Close()
+func (d *Day04) LoadInput(input io.Reader) {
+	d.g = make([][]rune, 0)
 
 	scanner := bufio.NewScanner(input)
-
-	d.g = make([][]rune, 0)
 
 	y := 0
 
@@ -53,15 +40,15 @@ func (d *day04) LoadInput(inputPath string) {
 	}
 }
 
-func (d *day04) PartOne() int {
+func (d *Day04) PartOne() int {
 	return d.sum(grid.countXmas)
 }
 
-func (d *day04) PartTwo() int {
+func (d *Day04) PartTwo() int {
 	return d.sum(grid.countMas)
 }
 
-func (d *day04) sum(sumFn func(g grid, x, y int) int) int {
+func (d *Day04) sum(sumFn func(g grid, x, y int) int) int {
 	yChan := make(chan int, len(d.g))
 	sumChan := make(chan int, len(d.g))
 
@@ -99,7 +86,7 @@ func (g grid) traverseByRow(sumFn func(g grid, x, y int) int, yChan <-chan int, 
 		for x := range len(g[y]) {
 			sum += sumFn(g, x, y)
 		}
-		
+
 		sumChan <- sum
 	}
 
@@ -134,19 +121,19 @@ func (g grid) countXmas(x, y int) int {
 	total += g.checkXmas(x, y, -1, 0)
 	total += g.checkXmas(x, y, -1, 1)
 
-	return total	
+	return total
 }
 
 func (g grid) checkXmas(x, y, xDir, yDir int) int {
-	if g.at(x + (xDir * 1), y + (yDir * 1)) != 'M' {
+	if g.at(x+(xDir*1), y+(yDir*1)) != 'M' {
 		return 0
 	}
 
-	if g.at(x + (xDir * 2), y + (yDir * 2)) != 'A' {
+	if g.at(x+(xDir*2), y+(yDir*2)) != 'A' {
 		return 0
 	}
 
-	if g.at(x + (xDir * 3), y + (yDir * 3)) != 'S' {
+	if g.at(x+(xDir*3), y+(yDir*3)) != 'S' {
 		return 0
 	}
 

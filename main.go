@@ -4,20 +4,23 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/roland-kister/advent-of-code-2024/day01"
 	"github.com/roland-kister/advent-of-code-2024/day02"
 	"github.com/roland-kister/advent-of-code-2024/day03"
 	"github.com/roland-kister/advent-of-code-2024/day04"
+	"github.com/roland-kister/advent-of-code-2024/day05"
 	"github.com/roland-kister/advent-of-code-2024/internal"
 )
 
 func main() {
 	solvers := []internal.Solver{
-		day01.NewDay01(),
-		day02.NewDay02(),
-		day03.NewDay03(),
-		day04.NewDay04(),
+		&day01.Day01{},
+		&day02.Day02{},
+		&day03.Day03{},
+		&day04.Day04{},
+		&day05.Day05{},
 	}
 
 	for i, solver := range solvers {
@@ -25,7 +28,14 @@ func main() {
 
 		fmt.Printf("day %s:\n", dayIndex)
 
-		solver.LoadInput(fmt.Sprintf("./inputs/%s.txt", dayIndex))
+		input, err := os.Open(fmt.Sprintf("./inputs/%s.txt", dayIndex))
+		if err != nil {
+			panic(err)
+		}
+
+		solver.LoadInput(input)
+
+		input.Close()
 
 		partOne := solver.PartOne()
 		fmt.Printf("\tpart one = %d\n", partOne)

@@ -4,32 +4,19 @@ package day01
 
 import (
 	"bufio"
-	"os"
+	"io"
 	"strconv"
 	"strings"
-
-	"github.com/roland-kister/advent-of-code-2024/internal"
 )
 
-type day01 struct {
+type Day01 struct {
 	lefts  []int
 	rights []int
 }
 
-func NewDay01() internal.Solver {
-	return &day01{}
-}
-
-func (d *day01) LoadInput(inputPath string) {
+func (d *Day01) LoadInput(input io.Reader) {
 	d.lefts = make([]int, 0)
 	d.rights = make([]int, 0)
-
-	input, err := os.Open(inputPath)
-	if err != nil {
-		panic(err)
-	}
-
-	defer input.Close()
 
 	scanner := bufio.NewScanner(input)
 
@@ -56,7 +43,7 @@ func (d *day01) LoadInput(inputPath string) {
 	}
 }
 
-func (d day01) PartOne() int {
+func (d Day01) PartOne() int {
 	quicksort(d.lefts, 0, len(d.lefts)-1)
 	quicksort(d.rights, 0, len(d.rights)-1)
 
@@ -69,7 +56,7 @@ func (d day01) PartOne() int {
 	return diff
 }
 
-func (d day01) PartTwo() int {
+func (d Day01) PartTwo() int {
 	quicksort(d.lefts, 0, len(d.lefts)-1)
 	quicksort(d.rights, 0, len(d.rights)-1)
 
@@ -127,42 +114,4 @@ func abs(num int) int {
 		return num
 	}
 	return -num
-}
-
-func loadInput(inputPath string) ([]int, []int) {
-	lefts := make([]int, 0)
-	rights := make([]int, 0)
-
-	input, err := os.Open(inputPath)
-	if err != nil {
-		panic(err)
-	}
-
-	defer input.Close()
-
-	scanner := bufio.NewScanner(input)
-
-	for scanner.Scan() {
-		words := strings.Split(scanner.Text(), "   ")
-
-		left, err := strconv.Atoi(words[0])
-		if err != nil {
-			panic(err)
-		}
-
-		lefts = append(lefts, left)
-
-		right, err := strconv.Atoi(words[1])
-		if err != nil {
-			panic(err)
-		}
-
-		rights = append(rights, right)
-	}
-
-	if err := scanner.Err(); err != nil {
-		panic(err)
-	}
-
-	return lefts, rights
 }

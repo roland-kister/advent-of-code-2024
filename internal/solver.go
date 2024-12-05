@@ -1,7 +1,9 @@
 package internal
 
+import "io"
+
 type Solver interface {
-	LoadInput(inputPath string)
+	LoadInput(io.Reader)
 	PartOne() int
 	PartTwo() int
 }

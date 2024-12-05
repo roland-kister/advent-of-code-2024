@@ -5,31 +5,18 @@ package day02
 import (
 	"bufio"
 	"fmt"
-	"os"
+	"io"
 	"strconv"
 	"strings"
 	"sync"
-
-	"github.com/roland-kister/advent-of-code-2024/internal"
 )
 
-type day02 struct {
+type Day02 struct {
 	reps [][]int
 }
 
-func NewDay02() internal.Solver {
-	return &day02{}
-}
-
-func (d *day02) LoadInput(inputPath string) {
+func (d *Day02) LoadInput(input io.Reader) {
 	d.reps = make([][]int, 0)
-
-	input, err := os.Open(inputPath)
-	if err != nil {
-		panic(err)
-	}
-
-	defer input.Close()
 
 	scanner := bufio.NewScanner(input)
 
@@ -55,7 +42,7 @@ func (d *day02) LoadInput(inputPath string) {
 	}
 }
 
-func (d *day02) PartOne() int {
+func (d *Day02) PartOne() int {
 	safeCount := 0
 
 	for _, rep := range d.reps {
@@ -67,7 +54,7 @@ func (d *day02) PartOne() int {
 	return safeCount
 }
 
-func (d *day02) PartTwo() int {
+func (d *Day02) PartTwo() int {
 	safeTolChan := make(chan bool, len(d.reps))
 
 	wg := new(sync.WaitGroup)
