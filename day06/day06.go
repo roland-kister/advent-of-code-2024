@@ -1,5 +1,7 @@
 // https://adventofcode.com/2024/day/6
 
+// extremely horrendous solution ... please don't judge
+
 package day06
 
 import (
@@ -25,9 +27,10 @@ const (
 )
 
 type Day06 struct {
-	tiles       [][]tileType
-	guardStartX int
-	guardStartY int
+	tiles         [][]tileType
+	guardStartX   int
+	guardStartY   int
+	guardStartDir tileType
 }
 
 func (d *Day06) LoadInput(input io.Reader) {
@@ -51,9 +54,12 @@ func (d *Day06) LoadInput(input io.Reader) {
 			case guardUp, guardRight, guardDown, guardLeft:
 				d.guardStartX = x
 				d.guardStartY = y
+				d.guardStartDir = tile
 			}
 		}
 	}
+
+	d.tiles[d.guardStartY][d.guardStartY] = empty
 
 	if err := scanner.Err(); err != nil {
 		panic(err)
@@ -63,13 +69,16 @@ func (d *Day06) LoadInput(input io.Reader) {
 func (d *Day06) PartOne() int {
 	guardX := d.guardStartX
 	guardY := d.guardStartY
+	guardDir := d.guardStartDir
 
 	if len(d.tiles) == 0 {
 		return 0
 	}
 
+	d.reset()
+
 	for !d.done(guardX, guardY) {
-		guardX, guardY = d.nextStep(guardX, guardY)
+		guardX, guardY, guardDir = d.nextStep(guardX, guardY, guardDir)
 	}
 
 	sum := 0
@@ -89,12 +98,14 @@ func (d *Day06) done(guardX, guardY int) bool {
 	return guardX < 0 || guardY < 0 || guardX >= len(d.tiles[0]) || guardY >= len(d.tiles)
 }
 
-func (d *Day06) nextStep(guardX, guardY int) (nextX, nextY int) {
+func (d *Day06) nextStep(guardX, guardY int, guardDir tileType) (nextX, nextY int, nextDir tileType) {
+	newGuardDir := guardDir
+
 	for range 4 {
 		dirX := 0
 		dirY := 0
 
-		switch d.tiles[guardY][guardX] {
+		switch newGuardDir {
 		case guardUp:
 			dirY = -1
 		case guardRight:
@@ -106,25 +117,24 @@ func (d *Day06) nextStep(guardX, guardY int) (nextX, nextY int) {
 		}
 
 		if d.done(guardX+dirX, guardY+dirY) {
-			d.tiles[guardY][guardX] = guardToVisited(d.tiles[guardY][guardX])
-			return guardX + dirX, guardY + dirY
+			d.tiles[guardY][guardX] = guardToVisited(newGuardDir)
+			return guardX + dirX, guardY + dirY, newGuardDir
 		}
 
 		if d.tiles[guardY+dirY][guardX+dirX] != obstacle && d.tiles[guardY+dirY][guardX+dirX] != newObstacle {
-			d.tiles[guardY+dirY][guardX+dirX] = d.tiles[guardY][guardX]
-			d.tiles[guardY][guardX] = guardToVisited(d.tiles[guardY][guardX])
-			return guardX + dirX, guardY + dirY
+			d.tiles[guardY][guardX] = guardToVisited(newGuardDir)
+			return guardX + dirX, guardY + dirY, newGuardDir
 		}
 
-		switch d.tiles[guardY][guardX] {
+		switch newGuardDir {
 		case guardUp:
-			d.tiles[guardY][guardX] = guardRight
+			newGuardDir = guardRight
 		case guardRight:
-			d.tiles[guardY][guardX] = guardDown
+			newGuardDir = guardDown
 		case guardDown:
-			d.tiles[guardY][guardX] = guardLeft
+			newGuardDir = guardLeft
 		case guardLeft:
-			d.tiles[guardY][guardX] = guardUp
+			newGuardDir = guardUp
 		}
 	}
 
@@ -149,25 +159,84 @@ func guardToVisited(guard tileType) tileType {
 func (d *Day06) reset() {
 	for y := range d.tiles {
 		for x, tile := range d.tiles[y] {
-			if tile == visitedUp || tile == visitedRight || tile == visitedDown || tile == visitedLeft {
+			if tile == visitedUp || tile == visitedRight || tile == visitedDown || tile == visitedLeft || tile == newObstacle {
 				d.tiles[y][x] = empty
 			}
 		}
 	}
 
-	d.tiles[d.guardStartY][d.guardStartY] = guardUp
+	d.tiles[d.guardStartY][d.guardStartY] = empty
 }
 
 func (d *Day06) PartTwo() int {
+	sum := 0
+
+	d.reset()
+
 	for y := range d.tiles {
 		for x, tile := range d.tiles[y] {
-			d.reset()
+			shadowGrid := make([][][]bool, 4)
+			for i := range 4 {
+				shadowGrid[i] = make([][]bool, len(d.tiles))
+				for y := range len(d.tiles) {
+					shadowGrid[i][y] = make([]bool, len(d.tiles[y]))
+				}
+
+			}
 
 			if tile == empty {
-				d.tiles[y][x] = empty
+				d.tiles[y][x] = newObstacle
+			} else {
+				continue
 			}
+
+			guardX := d.guardStartX
+			guardY := d.guardStartY
+			guardDir := d.guardStartDir
+
+		Main:
+			for !d.done(guardX, guardY) {
+				switch guardDir {
+				case guardUp:
+					if shadowGrid[0][guardY][guardX] {
+						sum++
+						break Main
+					}
+					shadowGrid[0][guardY][guardX] = true
+				case guardRight:
+					if shadowGrid[1][guardY][guardX] {
+						sum++
+						break Main
+					}
+					shadowGrid[1][guardY][guardX] = true
+				case guardDown:
+					if shadowGrid[2][guardY][guardX] {
+						sum++
+						break Main
+					}
+					shadowGrid[2][guardY][guardX] = true
+				case guardLeft:
+					if shadowGrid[3][guardY][guardX] {
+						sum++
+						break Main
+					}
+					shadowGrid[3][guardY][guardX] = true
+				}
+
+				guardX, guardY, guardDir = d.nextStep(guardX, guardY, guardDir)
+			}
+
+			d.reset()
 		}
 	}
 
-	return 0
+	return sum
+}
+
+func (d *Day06) visited(guardX, guardY int, guardDir tileType) bool {
+	visited := guardToVisited(guardDir)
+
+	fmt.Printf("%c - %c\n", visited, d.tiles[guardY][guardX])
+
+	return d.tiles[guardY][guardX] == visited
 }
