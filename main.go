@@ -11,6 +11,7 @@ import (
 	"github.com/roland-kister/advent-of-code-2024/day03"
 	"github.com/roland-kister/advent-of-code-2024/day04"
 	"github.com/roland-kister/advent-of-code-2024/day05"
+	"github.com/roland-kister/advent-of-code-2024/day06"
 	"github.com/roland-kister/advent-of-code-2024/internal"
 )
 
@@ -21,6 +22,7 @@ func main() {
 		&day03.Day03{},
 		&day04.Day04{},
 		&day05.Day05{},
+		&day06.Day06{},
 	}
 
 	for i, solver := range solvers {
