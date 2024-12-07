@@ -1,242 +1,259 @@
 // https://adventofcode.com/2024/day/6
 
-// extremely horrendous solution ... please don't judge
-
 package day06
 
 import (
 	"bufio"
-	"fmt"
 	"io"
+	"slices"
 )
-
-type tileType rune
 
 const (
-	empty        tileType = '.'
-	obstacle     tileType = '#'
-	newObstacle  tileType = 'O'
-	guardUp      tileType = '^'
-	guardRight   tileType = '>'
-	guardLeft    tileType = '<'
-	guardDown    tileType = 'v'
-	visitedUp    tileType = 'U'
-	visitedRight tileType = 'R'
-	visitedDown  tileType = 'D'
-	visitedLeft  tileType = 'L'
+	obsTile    byte = '#'
+	gUpTile    byte = '^'
+	gRightTile byte = '>'
+	gDownTile  byte = 'v'
+	gLeftTile  byte = '<'
 )
 
+type position struct {
+	y int
+	x int
+}
+
+func (o position) getY() int {
+	return o.y
+}
+
+func (o position) getX() int {
+	return o.x
+}
+
+type obstacle struct {
+	pos       position
+	hitTop    bool
+	hitRight  bool
+	hitBottom bool
+	hitLeft   bool
+}
+
+type obstacleDim []*obstacle
+
+type guard struct {
+	pos position
+	dir position
+}
+
 type Day06 struct {
-	tiles         [][]tileType
-	guardStartX   int
-	guardStartY   int
-	guardStartDir tileType
+	yMap       []obstacleDim
+	xMap       []obstacleDim
+	guardStart guard
 }
 
 func (d *Day06) LoadInput(input io.Reader) {
-	d.tiles = make([][]tileType, 0)
-	d.guardStartX = 0
-	d.guardStartY = 0
+	d.guardStart = guard{}
+	d.yMap = make([]obstacleDim, 0)
 
 	scanner := bufio.NewScanner(input)
 
 	for y := 0; scanner.Scan(); y++ {
 		line := scanner.Bytes()
 
-		d.tiles = append(d.tiles, make([]tileType, len(line)))
+		d.yMap = append(d.yMap, make(obstacleDim, 0))
 
-		for x, tileRaw := range line {
-			tile := tileType(tileRaw)
+		if y == 0 {
+			d.xMap = make([]obstacleDim, len(line))
+		}
 
-			d.tiles[y][x] = tile
+		for x, tile := range line {
+			if tile == obsTile {
+				obs := &obstacle{
+					pos: position{y, x},
+				}
+
+				d.yMap[y] = append(d.yMap[y], obs)
+				d.xMap[x] = append(d.xMap[x], obs)
+				continue
+			}
+
+			if tile != gUpTile && tile != gRightTile && tile != gDownTile && tile != gLeftTile {
+				continue
+			}
+
+			d.guardStart = guard{
+				pos: position{y, x},
+				dir: position{0, 0},
+			}
 
 			switch tile {
-			case guardUp, guardRight, guardDown, guardLeft:
-				d.guardStartX = x
-				d.guardStartY = y
-				d.guardStartDir = tile
+			case gUpTile:
+				d.guardStart.dir.y = -1
+			case gRightTile:
+				d.guardStart.dir.x = 1
+			case gDownTile:
+				d.guardStart.dir.y = 1
+			case gLeftTile:
+				d.guardStart.dir.x = -1
 			}
 		}
 	}
-
-	d.tiles[d.guardStartY][d.guardStartY] = empty
 
 	if err := scanner.Err(); err != nil {
 		panic(err)
 	}
+
+	for y := range d.yMap {
+		slices.SortFunc(d.yMap[y], func(a, b *obstacle) int {
+			return a.pos.x - b.pos.x
+		})
+	}
+
+	for x := range d.xMap {
+		slices.SortFunc(d.xMap[x], func(a, b *obstacle) int {
+			return a.pos.y - b.pos.y
+		})
+	}
 }
 
 func (d *Day06) PartOne() int {
-	guardX := d.guardStartX
-	guardY := d.guardStartY
-	guardDir := d.guardStartDir
-
-	if len(d.tiles) == 0 {
-		return 0
-	}
-
-	d.reset()
-
-	for !d.done(guardX, guardY) {
-		guardX, guardY, guardDir = d.nextStep(guardX, guardY, guardDir)
-	}
-
-	sum := 0
-
-	for y := range d.tiles {
-		for _, tile := range d.tiles[y] {
-			if tile == visitedUp || tile == visitedRight || tile == visitedDown || tile == visitedLeft {
-				sum++
-			}
-		}
-	}
-
-	return sum
-}
-
-func (d *Day06) done(guardX, guardY int) bool {
-	return guardX < 0 || guardY < 0 || guardX >= len(d.tiles[0]) || guardY >= len(d.tiles)
-}
-
-func (d *Day06) nextStep(guardX, guardY int, guardDir tileType) (nextX, nextY int, nextDir tileType) {
-	newGuardDir := guardDir
-
-	for range 4 {
-		dirX := 0
-		dirY := 0
-
-		switch newGuardDir {
-		case guardUp:
-			dirY = -1
-		case guardRight:
-			dirX = 1
-		case guardDown:
-			dirY = 1
-		case guardLeft:
-			dirX = -1
-		}
-
-		if d.done(guardX+dirX, guardY+dirY) {
-			d.tiles[guardY][guardX] = guardToVisited(newGuardDir)
-			return guardX + dirX, guardY + dirY, newGuardDir
-		}
-
-		if d.tiles[guardY+dirY][guardX+dirX] != obstacle && d.tiles[guardY+dirY][guardX+dirX] != newObstacle {
-			d.tiles[guardY][guardX] = guardToVisited(newGuardDir)
-			return guardX + dirX, guardY + dirY, newGuardDir
-		}
-
-		switch newGuardDir {
-		case guardUp:
-			newGuardDir = guardRight
-		case guardRight:
-			newGuardDir = guardDown
-		case guardDown:
-			newGuardDir = guardLeft
-		case guardLeft:
-			newGuardDir = guardUp
-		}
-	}
-
-	panic("can't continue with guard")
-}
-
-func guardToVisited(guard tileType) tileType {
-	switch guard {
-	case guardUp:
-		return visitedUp
-	case guardRight:
-		return visitedRight
-	case guardDown:
-		return visitedDown
-	case guardLeft:
-		return visitedLeft
-	default:
-		panic(fmt.Sprintf("can't convert guard %d to visited", guard))
-	}
-}
-
-func (d *Day06) reset() {
-	for y := range d.tiles {
-		for x, tile := range d.tiles[y] {
-			if tile == visitedUp || tile == visitedRight || tile == visitedDown || tile == visitedLeft || tile == newObstacle {
-				d.tiles[y][x] = empty
-			}
-		}
-	}
-
-	d.tiles[d.guardStartY][d.guardStartY] = empty
+	visited := d.getVisited()
+	return len(visited)
 }
 
 func (d *Day06) PartTwo() int {
-	sum := 0
+	return 0
+}
 
-	d.reset()
+func (d *Day06) getVisited() []position {
+	gSteps := make([][]bool, len(d.yMap))
+	for y := range d.yMap {
+		gSteps[y] = make([]bool, len(d.xMap))
+	}
 
-	for y := range d.tiles {
-		for x, tile := range d.tiles[y] {
-			shadowGrid := make([][][]bool, 4)
-			for i := range 4 {
-				shadowGrid[i] = make([][]bool, len(d.tiles))
-				for y := range len(d.tiles) {
-					shadowGrid[i][y] = make([]bool, len(d.tiles[y]))
-				}
+	g := d.guardStart
 
+	var nextOb *obstacle
+
+	for {
+		if g.dir.y != 0 {
+			nextOb = d.xMap[g.pos.x].nextObstacle(position.getY, g)
+		} else {
+			nextOb = d.yMap[g.pos.y].nextObstacle(position.getX, g)
+		}
+
+		if nextOb == nil {
+			break
+		}
+
+		if g.dir.y != 0 {
+			for y := g.pos.y; y != nextOb.pos.y; y += g.dir.y {
+				gSteps[y][g.pos.x] = true
 			}
-
-			if tile == empty {
-				d.tiles[y][x] = newObstacle
-			} else {
-				continue
+		} else {
+			for x := g.pos.x; x != nextOb.pos.x; x += g.dir.x {
+				gSteps[g.pos.y][x] = true
 			}
+		}
 
-			guardX := d.guardStartX
-			guardY := d.guardStartY
-			guardDir := d.guardStartDir
+		g.moveAndRotate(nextOb)
+	}
 
-		Main:
-			for !d.done(guardX, guardY) {
-				switch guardDir {
-				case guardUp:
-					if shadowGrid[0][guardY][guardX] {
-						sum++
-						break Main
-					}
-					shadowGrid[0][guardY][guardX] = true
-				case guardRight:
-					if shadowGrid[1][guardY][guardX] {
-						sum++
-						break Main
-					}
-					shadowGrid[1][guardY][guardX] = true
-				case guardDown:
-					if shadowGrid[2][guardY][guardX] {
-						sum++
-						break Main
-					}
-					shadowGrid[2][guardY][guardX] = true
-				case guardLeft:
-					if shadowGrid[3][guardY][guardX] {
-						sum++
-						break Main
-					}
-					shadowGrid[3][guardY][guardX] = true
-				}
-
-				guardX, guardY, guardDir = d.nextStep(guardX, guardY, guardDir)
-			}
-
-			d.reset()
+	// walk guard out of map
+	if g.dir.y != 0 {
+		for y := g.pos.y; y > 0 && y < len(d.yMap); y += g.dir.y {
+			gSteps[y][g.pos.x] = true
+		}
+	} else {
+		for x := g.pos.x; x > 0 && x < len(d.xMap); x += g.dir.x {
+			gSteps[g.pos.y][x] = true
 		}
 	}
 
-	return sum
+	visited := make([]position, 0)
+	for y := range gSteps {
+		for x := range gSteps[y] {
+			if gSteps[y][x] {
+				visited = append(visited, position{y, x})
+			}
+		}
+	}
+
+	return visited
 }
 
-func (d *Day06) visited(guardX, guardY int, guardDir tileType) bool {
-	visited := guardToVisited(guardDir)
+func (oDim obstacleDim) nextObstacle(posFunc func(position) int, g guard) *obstacle {
+	if len(oDim) == 0 {
+		return nil
+	}
 
-	fmt.Printf("%c - %c\n", visited, d.tiles[guardY][guardX])
+	oIndex := oDim.binSearch(posFunc, g, 0, len(oDim)-1)
 
-	return d.tiles[guardY][guardX] == visited
+	if oIndex < 0 || oIndex >= len(oDim) {
+		return nil
+	}
+
+	return oDim[oIndex]
+}
+
+func (oDim obstacleDim) binSearch(posFunc func(position) int, g guard, low, high int) int {
+	if high < low {
+		if posFunc(g.dir) < 0 {
+			return high
+		} else {
+			return low
+		}
+	}
+
+	mid := low + (high-low)/2
+
+	if posFunc(oDim[mid].pos) > posFunc(g.pos) {
+		return oDim.binSearch(posFunc, g, low, mid-1)
+	}
+
+	return oDim.binSearch(posFunc, g, mid+1, high)
+}
+
+func (g *guard) moveAndRotate(ob *obstacle) bool {
+	g.pos.x = ob.pos.x - g.dir.x
+	g.pos.y = ob.pos.y - g.dir.y
+
+	loop := false
+
+	if g.dir.y == -1 {
+		if ob.hitBottom == true {
+			loop = true
+		}
+		ob.hitBottom = true
+
+		g.dir.y = 0
+		g.dir.x = 1
+	} else if g.dir.x == 1 {
+		if ob.hitLeft == true {
+			loop = true
+		}
+
+		ob.hitLeft = true
+		g.dir.y = 1
+		g.dir.x = 0
+	} else if g.dir.y == 1 {
+		if ob.hitTop {
+			loop = true
+		}
+		ob.hitTop = true
+
+		g.dir.y = 0
+		g.dir.x = -1
+	} else if g.dir.x == -1 {
+		if ob.hitRight {
+			loop = true
+		}
+		ob.hitRight = true
+
+		g.dir.y = -1
+		g.dir.x = 0
+	} else {
+		panic("guard got into unknown direction")
+	}
+
+	return loop
 }
