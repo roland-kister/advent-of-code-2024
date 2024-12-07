@@ -6,6 +6,7 @@ import (
 	"bufio"
 	"io"
 	"slices"
+	"sync"
 )
 
 const (
@@ -121,24 +122,110 @@ func (d *Day06) PartOne() int {
 }
 
 func (d *Day06) PartTwo() int {
-	return 0
+	visited := d.getVisited()
+
+	resChan := make(chan bool, len(visited)-1)
+	wg := new(sync.WaitGroup)
+
+	for _, newObsPos := range visited {
+		if newObsPos.y == d.guardStart.pos.y && newObsPos.x == d.guardStart.pos.x {
+			continue
+		}
+
+		wg.Add(1)
+		go d.verifyLoop(newObsPos, resChan, wg)
+	}
+
+	wg.Wait()
+
+	sum := 0
+
+	for range len(visited) - 1 {
+		loop := <-resChan
+		if loop {
+			sum++
+		}
+	}
+	return sum
+}
+
+func (d *Day06) verifyLoop(newObsPos position, resChan chan<- bool, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	yMap, xMap := d.getMapCopies()
+	g := d.guardStart
+
+	newObs := &obstacle{
+		pos: newObsPos,
+	}
+
+	yMap[newObsPos.y] = append(yMap[newObsPos.y], newObs)
+	slices.SortFunc(yMap[newObsPos.y], func(a, b *obstacle) int {
+		return a.pos.x - b.pos.x
+	})
+
+	xMap[newObsPos.x] = append(xMap[newObsPos.x], newObs)
+	slices.SortFunc(xMap[newObsPos.x], func(a, b *obstacle) int {
+		return a.pos.y - b.pos.y
+	})
+
+	var nextOb *obstacle
+	for {
+		if g.dir.y != 0 {
+			nextOb = xMap[g.pos.x].nextObstacle(position.getY, g)
+		} else {
+			nextOb = yMap[g.pos.y].nextObstacle(position.getX, g)
+		}
+
+		if nextOb == nil {
+			resChan <- false
+			break
+		}
+
+		if g.moveAndRotate(nextOb) {
+			resChan <- true
+			break
+		}
+	}
+}
+
+func (d *Day06) getMapCopies() (yMapCopy, xMapCopy []obstacleDim) {
+	yMapCopy = make([]obstacleDim, len(d.yMap))
+	for y := range yMapCopy {
+		yMapCopy[y] = make(obstacleDim, len(d.yMap[y]))
+		for x := range yMapCopy[y] {
+			yMapCopy[y][x] = &obstacle{}
+			*yMapCopy[y][x] = *d.yMap[y][x]
+		}
+	}
+
+	xMapCopy = make([]obstacleDim, len(d.xMap))
+	for x := range xMapCopy {
+		xMapCopy[x] = make(obstacleDim, len(d.xMap[x]))
+		for y := range xMapCopy[x] {
+			xMapCopy[x][y] = &obstacle{}
+			*xMapCopy[x][y] = *d.xMap[x][y]
+		}
+	}
+
+	return yMapCopy, xMapCopy
 }
 
 func (d *Day06) getVisited() []position {
-	gSteps := make([][]bool, len(d.yMap))
-	for y := range d.yMap {
-		gSteps[y] = make([]bool, len(d.xMap))
-	}
-
+	yMap, xMap := d.getMapCopies()
 	g := d.guardStart
 
-	var nextOb *obstacle
+	gSteps := make([][]bool, len(yMap))
+	for y := range yMap {
+		gSteps[y] = make([]bool, len(xMap))
+	}
 
+	var nextOb *obstacle
 	for {
 		if g.dir.y != 0 {
-			nextOb = d.xMap[g.pos.x].nextObstacle(position.getY, g)
+			nextOb = xMap[g.pos.x].nextObstacle(position.getY, g)
 		} else {
-			nextOb = d.yMap[g.pos.y].nextObstacle(position.getX, g)
+			nextOb = yMap[g.pos.y].nextObstacle(position.getX, g)
 		}
 
 		if nextOb == nil {
@@ -160,11 +247,11 @@ func (d *Day06) getVisited() []position {
 
 	// walk guard out of map
 	if g.dir.y != 0 {
-		for y := g.pos.y; y > 0 && y < len(d.yMap); y += g.dir.y {
+		for y := g.pos.y; y > 0 && y < len(yMap); y += g.dir.y {
 			gSteps[y][g.pos.x] = true
 		}
 	} else {
-		for x := g.pos.x; x > 0 && x < len(d.xMap); x += g.dir.x {
+		for x := g.pos.x; x > 0 && x < len(xMap); x += g.dir.x {
 			gSteps[g.pos.y][x] = true
 		}
 	}
@@ -177,6 +264,8 @@ func (d *Day06) getVisited() []position {
 			}
 		}
 	}
+
+	// return []position{{d.guardStart.pos.y, d.guardStart.pos.x}, {7, 6}}
 
 	return visited
 }
@@ -220,7 +309,7 @@ func (g *guard) moveAndRotate(ob *obstacle) bool {
 	loop := false
 
 	if g.dir.y == -1 {
-		if ob.hitBottom == true {
+		if ob.hitBottom {
 			loop = true
 		}
 		ob.hitBottom = true
@@ -228,11 +317,11 @@ func (g *guard) moveAndRotate(ob *obstacle) bool {
 		g.dir.y = 0
 		g.dir.x = 1
 	} else if g.dir.x == 1 {
-		if ob.hitLeft == true {
+		if ob.hitLeft {
 			loop = true
 		}
-
 		ob.hitLeft = true
+
 		g.dir.y = 1
 		g.dir.x = 0
 	} else if g.dir.y == 1 {
