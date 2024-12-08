@@ -265,8 +265,6 @@ func (d *Day06) getVisited() []position {
 		}
 	}
 
-	// return []position{{d.guardStart.pos.y, d.guardStart.pos.x}, {7, 6}}
-
 	return visited
 }
 
