@@ -24,5 +24,8 @@ go.work.sum
 # env file
 .env
 
+# GoLang files
+.idea/
+
 # Input files of puzzles
 inputs/*.txt
