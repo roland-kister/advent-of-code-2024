@@ -12,18 +12,13 @@ func TestLoadInput(t *testing.T) {
 	d := Day11{}
 	d.LoadInput(strings.NewReader(example))
 
-	stoneTwo := &stone{
-		val:       17,
-		nextStone: nil,
+	stones := stoneMap{
+		125: 1,
+		17:  1,
 	}
 
-	initStone := &stone{
-		val:       125,
-		nextStone: stoneTwo,
-	}
-
-	if !reflect.DeepEqual(d.initStone, initStone) {
-		t.Fatalf("LoadInput() -> initStone %v, want %v", d.initStone, initStone)
+	if !reflect.DeepEqual(d.stones, stones) {
+		t.Fatalf("LoadInput() -> stones %v, want %v", d.stones, stones)
 	}
 }
 
@@ -43,7 +38,7 @@ func TestPartTwo(t *testing.T) {
 	d := Day11{}
 	d.LoadInput(strings.NewReader(example))
 
-	out := 55312
+	out := 65601038650482
 	actOut := d.PartTwo()
 
 	if out != actOut {

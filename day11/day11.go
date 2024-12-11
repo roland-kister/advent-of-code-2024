@@ -7,21 +7,16 @@ import (
 	"io"
 	"strconv"
 	"strings"
-	"sync"
 )
 
-type Day11 struct {
-	initStone *stone
-}
+type stoneMap map[uint64]uint64
 
-type stone struct {
-	val       uint64
-	nextStone *stone
+type Day11 struct {
+	stones stoneMap
 }
 
 func (d *Day11) LoadInput(input io.Reader) {
-	d.initStone = nil
-	var prevStone *stone = nil
+	d.stones = make(stoneMap)
 
 	scanner := bufio.NewScanner(input)
 	scanner.Scan()
@@ -34,16 +29,7 @@ func (d *Day11) LoadInput(input io.Reader) {
 			panic(err)
 		}
 
-		currStone := &stone{val: uint64(val)}
-
-		if prevStone == nil {
-			d.initStone = currStone
-			prevStone = currStone
-			continue
-		}
-
-		prevStone.nextStone = currStone
-		prevStone = currStone
+		d.stones[uint64(val)] = 1
 	}
 }
 
@@ -52,91 +38,52 @@ func (d *Day11) PartOne() int {
 }
 
 func (d *Day11) PartTwo() int {
-	return d.solve(25)
+	return d.solve(75)
 }
 
 func (d *Day11) solve(iterCount int) int {
-	initStone := d.copyInitStone()
+	stones := make(stoneMap)
 
-	initStoneCount := 0
-	for s := initStone; s != nil; s = s.nextStone {
-		initStoneCount++
+	for k, v := range d.stones {
+		stones[k] = v
 	}
 
-	sumChan := make(chan int, initStoneCount)
-	wg := new(sync.WaitGroup)
-
-	for s := initStone; s != nil; s = s.nextStone {
-		wg.Add(1)
-		go s.solveRoutine(iterCount, sumChan, wg)
+	for range iterCount {
+		stones = blink(stones)
 	}
-
-	wg.Wait()
-	close(sumChan)
 
 	sum := 0
-	for subSum := range sumChan {
-		sum += subSum
+
+	for _, count := range stones {
+		sum += int(count)
 	}
 
 	return sum
 }
 
-func (s *stone) solveRoutine(iterCount int, sumChan chan<- int, wg *sync.WaitGroup) {
-	s.nextStone = nil
-
-	for range iterCount {
-		curr := s
-
-		for curr != nil {
-			switch {
-			case curr.val == 0:
-				curr.val = 1
-				curr = curr.nextStone
-			case curr.split():
-				curr = curr.nextStone.nextStone
-			default:
-				curr.val *= 2024
-				curr = curr.nextStone
-			}
+func blink(stones stoneMap) stoneMap {
+	newStones := make(stoneMap)
+	for stone, count := range stones {
+		if stone == 0 {
+			newStones[1] += count
+			continue
 		}
+
+		divider := divider(stone)
+
+		if divider == 0 {
+			newStones[stone*2024] += count
+			continue
+		}
+
+		newStones[stone/divider] += count
+		newStones[stone%divider] += count
 	}
 
-	sum := 0
-	for curr := s; curr != nil; curr = curr.nextStone {
-		sum++
-	}
-
-	sumChan <- sum
-	wg.Done()
+	return newStones
 }
 
-func (d *Day11) copyInitStone() *stone {
-	var initStone *stone = nil
-
-	var prev *stone = nil
-
-	for s := d.initStone; s != nil; s = s.nextStone {
-		curr := &stone{
-			val:       s.val,
-			nextStone: nil,
-		}
-
-		if prev == nil {
-			initStone = curr
-		} else {
-			prev.nextStone = curr
-		}
-
-		prev = curr
-	}
-
-	return initStone
-}
-
-func (s *stone) divider() uint64 {
-	n := s.val
-
+func divider(n uint64) uint64 {
 	switch {
 	case n == 0:
 		return 0
@@ -179,24 +126,4 @@ func (s *stone) divider() uint64 {
 	default:
 		return 100_000
 	}
-}
-
-func (s *stone) split() bool {
-	divider := s.divider()
-
-	if divider == 0 {
-		return false
-	}
-
-	newVal := s.val % divider
-	s.val = s.val / divider
-
-	newStone := &stone{
-		val:       newVal,
-		nextStone: s.nextStone,
-	}
-
-	s.nextStone = newStone
-
-	return true
 }
