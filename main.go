@@ -16,6 +16,7 @@ import (
 	"github.com/roland-kister/advent-of-code-2024/day08"
 	"github.com/roland-kister/advent-of-code-2024/day09"
 	"github.com/roland-kister/advent-of-code-2024/day10"
+	"github.com/roland-kister/advent-of-code-2024/day11"
 	"github.com/roland-kister/advent-of-code-2024/internal"
 )
 
@@ -31,6 +32,7 @@ func main() {
 		&day08.Day08{},
 		&day09.Day09{},
 		&day10.Day10{},
+		&day11.Day11{},
 	}
 
 	for i, solver := range solvers {
@@ -44,7 +46,10 @@ func main() {
 
 		solver.LoadInput(input)
 
-		input.Close()
+		err = input.Close()
+		if err != nil {
+			return
+		}
 
 		partOne := solver.PartOne()
 		fmt.Printf("\tpart one = %d\n", partOne)
