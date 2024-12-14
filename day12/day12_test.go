@@ -21,7 +21,7 @@ func TestLoadInput(t *testing.T) {
 	d := Day12{}
 	d.LoadInput(strings.NewReader(example))
 
-	fMap := farmMap{
+	regionMap := farmMap{
 		{'R', 'R', 'R', 'R', 'I', 'I', 'C', 'C', 'F', 'F'},
 		{'R', 'R', 'R', 'R', 'I', 'I', 'C', 'C', 'C', 'F'},
 		{'V', 'V', 'R', 'R', 'R', 'C', 'C', 'F', 'F', 'F'},
@@ -34,8 +34,8 @@ func TestLoadInput(t *testing.T) {
 		{'M', 'M', 'M', 'I', 'S', 'S', 'J', 'E', 'E', 'E'},
 	}
 
-	if !reflect.DeepEqual(d.fMap, fMap) {
-		t.Fatalf("LoadInput() -> fMap %v, want %v", d.fMap, fMap)
+	if !reflect.DeepEqual(d.region, regionMap) {
+		t.Fatalf("LoadInput() -> regionMap %v, want %v", d.region, regionMap)
 	}
 }
 
@@ -55,7 +55,7 @@ func TestPartTwo(t *testing.T) {
 	d := Day12{}
 	d.LoadInput(strings.NewReader(example))
 
-	out := 0
+	out := 1206
 	actOut := d.PartTwo()
 
 	if out != actOut {
