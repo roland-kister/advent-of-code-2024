@@ -5,7 +5,6 @@ package day13
 import (
 	"bufio"
 	"errors"
-	"fmt"
 	"io"
 	"math"
 	"regexp"
@@ -79,7 +78,7 @@ func (d *Day13) PartTwo() int {
 }
 
 func (m machine) solve() int {
-	maxIter := int(math.Ceil(math.Min(float64(m.prize[0])/float64(m.a[0]), float64(m.prize[1])/float64(m.a[1]))))
+	maxIter := int(math.Ceil(float64(m.prize[0]) / float64(m.a[0])))
 
 	startX, stepX, err := m.findStartAndStep(0)
 	if err != nil {
@@ -91,11 +90,11 @@ func (m machine) solve() int {
 		return 0
 	}
 
-	if stepX > stepY {
-		return m.findMinTokens(startX, stepX, maxIter)
+	if stepX < stepY {
+		return m.findMinTokens(startY, stepY, maxIter)
 	}
 
-	return m.findMinTokens(startY, stepY, maxIter)
+	return m.findMinTokens(startX, stepX, maxIter)
 }
 
 func (m machine) findStartAndStep(idx int) (start, step int, err error) {
@@ -157,12 +156,10 @@ func (m machine) findMinTokens(start, step, maxIter int) int {
 		if solution < min || min == 0 {
 			min = solution
 		} else if solution > min {
-			fmt.Println("break")
 			break
 		}
 
 	}
-
 	return min
 }
 
