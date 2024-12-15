@@ -4,6 +4,8 @@ package day13
 
 import (
 	"bufio"
+	"errors"
+	"fmt"
 	"io"
 	"math"
 	"regexp"
@@ -69,28 +71,80 @@ func (d *Day13) PartOne() int {
 func (d *Day13) PartTwo() int {
 	total := 0
 
-	// for _, mach := range d.partTwoMachs {
-	// 	total += mach.solve()
-	// }
+	for _, mach := range d.partTwoMachs {
+		total += mach.solve()
+	}
 
 	return total
 }
 
 func (m machine) solve() int {
-	aMaxIter := int(math.Ceil(math.Min(float64(m.prize[0])/float64(m.a[0]), float64(m.prize[1])/float64(m.a[1]))))
-	bMaxIter := int(math.Ceil(math.Min(float64(m.prize[0])/float64(m.b[0]), float64(m.prize[1])/float64(m.b[1]))))
+	maxIter := int(math.Ceil(math.Min(float64(m.prize[0])/float64(m.a[0]), float64(m.prize[1])/float64(m.a[1]))))
 
-	if aMaxIter < bMaxIter {
-		return m.aSolvePress(aMaxIter)
+	startX, stepX, err := m.findStartAndStep(0)
+	if err != nil {
+		return 0
 	}
 
-	return m.bSolvePress(bMaxIter)
+	startY, stepY, err := m.findStartAndStep(1)
+	if err != nil {
+		return 0
+	}
+
+	if stepX > stepY {
+		return m.findMinTokens(startX, stepX, maxIter)
+	}
+
+	return m.findMinTokens(startY, stepY, maxIter)
 }
 
-func (m machine) aSolvePress(maxIter int) int {
+func (m machine) findStartAndStep(idx int) (start, step int, err error) {
+	start, step = 0, 1
+	bMods := make(map[int]int)
+
+	if m.a[0]%m.b[0] == 0 || m.b[0]%m.a[0] == 0 {
+		return
+	}
+
+	aPrMax := m.prize[idx]/m.a[idx] + 1
+
+	aPr := 0
+	if m.prize[idx]%m.b[idx] == 0 {
+		aPr++
+	}
+
+	for ; aPr < aPrMax; aPr++ {
+		bMod := (m.prize[idx] - m.a[idx]*aPr) % m.b[idx]
+
+		if bMod == 0 {
+			break
+		}
+
+		_, ok := bMods[bMod]
+		if ok {
+			return 0, 0, errors.New("not winnable")
+		}
+
+		bMods[bMod] = aPr
+	}
+
+	start, step = aPr, 1
+	firstMod := m.prize[idx] % m.b[idx]
+
+	for ; aPr < aPrMax; aPr++ {
+		if (m.prize[idx]-m.a[idx]*aPr)%m.b[idx] == firstMod {
+			step = aPr
+			break
+		}
+	}
+
+	return
+}
+
+func (m machine) findMinTokens(start, step, maxIter int) int {
 	min := 0
 
-	for aPr := range maxIter {
+	for aPr := start; aPr < maxIter; aPr += step {
 		rem0 := m.prize[0] - m.a[0]*aPr
 		rem1 := m.prize[1] - m.a[1]*aPr
 
@@ -102,28 +156,9 @@ func (m machine) aSolvePress(maxIter int) int {
 
 		if solution < min || min == 0 {
 			min = solution
-		}
-
-	}
-
-	return min
-}
-
-func (m machine) bSolvePress(maxIter int) int {
-	min := 0
-
-	for bPr := range maxIter {
-		rem0 := m.prize[0] - m.b[0]*bPr
-		rem1 := m.prize[1] - m.b[1]*bPr
-
-		if rem0/m.a[0] != rem1/m.a[1] || rem0%m.a[0] != 0 || rem1%m.a[1] != 0 {
-			continue
-		}
-
-		solution := bPr + (rem0/m.a[0])*3
-
-		if solution < min || min == 0 {
-			min = solution
+		} else if solution > min {
+			fmt.Println("break")
+			break
 		}
 
 	}
