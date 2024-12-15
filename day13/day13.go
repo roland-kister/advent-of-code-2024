@@ -141,8 +141,6 @@ func (m machine) findStartAndStep(idx int) (start, step int, err error) {
 }
 
 func (m machine) findMinTokens(start, step, maxIter int) int {
-	min := 0
-
 	for aPr := start; aPr < maxIter; aPr += step {
 		rem0 := m.prize[0] - m.a[0]*aPr
 		rem1 := m.prize[1] - m.a[1]*aPr
@@ -151,15 +149,10 @@ func (m machine) findMinTokens(start, step, maxIter int) int {
 			continue
 		}
 
-		solution := aPr*3 + (rem0 / m.b[0])
-
-		if solution < min || min == 0 {
-			return min
-		}
-
+		return aPr*3 + (rem0 / m.b[0])
 	}
 
-	return min
+	return 0
 }
 
 func parseXandY(text string) [2]int {
