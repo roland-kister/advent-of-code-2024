@@ -154,12 +154,11 @@ func (m machine) findMinTokens(start, step, maxIter int) int {
 		solution := aPr*3 + (rem0 / m.b[0])
 
 		if solution < min || min == 0 {
-			min = solution
-		} else if solution > min {
-			break
+			return min
 		}
 
 	}
+
 	return min
 }
 
