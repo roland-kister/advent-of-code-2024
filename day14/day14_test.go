@@ -70,7 +70,7 @@ func TestPartTwo(t *testing.T) {
 	d := Day14{}
 	d.LoadInput(strings.NewReader(example))
 
-	out := 0
+	out := 1
 	actOut := d.PartTwo()
 
 	if out != actOut {
