@@ -61,7 +61,7 @@ func (d *Day13) PartOne() int {
 	total := 0
 
 	for _, mach := range d.partOneMachs {
-		total += mach.solve()
+		total += mach.solvePartOne()
 	}
 
 	return total
@@ -71,13 +71,18 @@ func (d *Day13) PartTwo() int {
 	total := 0
 
 	for _, mach := range d.partTwoMachs {
-		total += mach.solve()
+		// Shamefully stolen from AoC subreddit
+		b := (mach.prize[0]*mach.a[1] - mach.prize[1]*mach.a[0]) / (mach.a[1]*mach.b[0] - mach.b[1]*mach.a[0])
+		a := (mach.prize[0]*mach.b[1] - mach.prize[1]*mach.b[0]) / (mach.b[1]*mach.a[0] - mach.b[0]*mach.a[1])
+		if mach.a[0]*a+mach.b[0]*b == mach.prize[0] && mach.a[1]*a+mach.b[1]*b == mach.prize[1] {
+			total += a*3 + b
+		}
 	}
 
 	return total
 }
 
-func (m machine) solve() int {
+func (m machine) solvePartOne() int {
 	maxIter := int(math.Ceil(float64(m.prize[0]) / float64(m.a[0])))
 
 	startX, stepX, err := m.findStartAndStep(0)
