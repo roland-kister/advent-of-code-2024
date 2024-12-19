@@ -4,18 +4,35 @@ package day16
 
 import (
 	"bufio"
-	"fmt"
 	"io"
+	"math"
 	"slices"
 )
 
 type Day16 struct {
+	edges     []*edge
+	startEdge *edge
+	endEdge   *edge
 }
 
 type edge struct {
 	x         int
 	y         int
 	connected []*edge
+}
+
+type direction byte
+
+const (
+	north direction = iota
+	east
+	south
+	west
+)
+
+type distanceDirection struct {
+	dist int
+	dir  direction
 }
 
 func (d *Day16) LoadInput(input io.Reader) {
@@ -30,9 +47,9 @@ func (d *Day16) LoadInput(input io.Reader) {
 		copy(maze[y], row)
 	}
 
-	edges := make([]*edge, 0)
-	var start *edge
-	var end *edge
+	d.edges = make([]*edge, 0)
+	d.startEdge = nil
+	d.endEdge = nil
 
 	for y, row := range maze {
 		for x, val := range row {
@@ -44,26 +61,26 @@ func (d *Day16) LoadInput(input io.Reader) {
 			horiz := maze[y][x-1] == '.' || maze[y][x+1] == '.'
 
 			if (vert && horiz) || val == 'S' || val == 'E' {
-				edges = append(edges, &edge{x: x, y: y, connected: make([]*edge, 0)})
+				d.edges = append(d.edges, &edge{x: x, y: y, connected: make([]*edge, 0)})
 			}
 
 			if val == 'S' {
-				start = edges[len(edges)-1]
+				d.startEdge = d.edges[len(d.edges)-1]
 			} else if val == 'E' {
-				end = edges[len(edges)-1]
+				d.endEdge = d.edges[len(d.edges)-1]
 			}
 
 		}
 	}
 
-	for i1, i2 := 0, 1; i2 < len(edges); i1, i2 = i1+1, i2+1 {
-		if edges[i1].y != edges[i2].y {
+	for i1, i2 := 0, 1; i2 < len(d.edges); i1, i2 = i1+1, i2+1 {
+		if d.edges[i1].y != d.edges[i2].y {
 			continue
 		}
 
 		connected := true
-		for x := edges[i1].x; x < edges[i2].x; x++ {
-			if maze[edges[i2].y][x] == '#' {
+		for x := d.edges[i1].x; x < d.edges[i2].x; x++ {
+			if maze[d.edges[i2].y][x] == '#' {
 				connected = false
 				break
 			}
@@ -73,11 +90,11 @@ func (d *Day16) LoadInput(input io.Reader) {
 			continue
 		}
 
-		edges[i1].connected = append(edges[i1].connected, edges[i2])
-		edges[i2].connected = append(edges[i2].connected, edges[i1])
+		d.edges[i1].connected = append(d.edges[i1].connected, d.edges[i2])
+		d.edges[i2].connected = append(d.edges[i2].connected, d.edges[i1])
 	}
 
-	slices.SortFunc(edges, func(a, b *edge) int {
+	slices.SortFunc(d.edges, func(a, b *edge) int {
 		if a.x != b.x {
 			return a.x - b.x
 		}
@@ -86,14 +103,14 @@ func (d *Day16) LoadInput(input io.Reader) {
 
 	})
 
-	for i1, i2 := 0, 1; i2 < len(edges); i1, i2 = i1+1, i2+1 {
-		if edges[i1].x != edges[i2].x {
+	for i1, i2 := 0, 1; i2 < len(d.edges); i1, i2 = i1+1, i2+1 {
+		if d.edges[i1].x != d.edges[i2].x {
 			continue
 		}
 
 		connected := true
-		for y := edges[i1].y; y < edges[i2].y; y++ {
-			if maze[y][edges[i2].x] == '#' {
+		for y := d.edges[i1].y; y < d.edges[i2].y; y++ {
+			if maze[y][d.edges[i2].x] == '#' {
 				connected = false
 				break
 			}
@@ -103,22 +120,89 @@ func (d *Day16) LoadInput(input io.Reader) {
 			continue
 		}
 
-		edges[i1].connected = append(edges[i1].connected, edges[i2])
-		edges[i2].connected = append(edges[i2].connected, edges[i1])
+		d.edges[i1].connected = append(d.edges[i1].connected, d.edges[i2])
+		d.edges[i2].connected = append(d.edges[i2].connected, d.edges[i1])
 	}
-
-	for _, edg := range edges {
-		fmt.Printf("x: %d, y: %d, conn: %d\n", edg.x, edg.y, len(edg.connected))
-	}
-
-	fmt.Println(start)
-	fmt.Println(end)
 }
 
 func (d *Day16) PartOne() int {
-	return 0
+	finalized := map[*edge]distanceDirection{
+		d.startEdge: {dist: 0, dir: east},
+	}
+	unvisited := make(map[*edge]distanceDirection)
+
+	for _, connEdge := range d.startEdge.connected {
+		unvisited[connEdge] = calcDistDir(d.startEdge, connEdge, east)
+	}
+
+	for {
+		var (
+			currEdge    *edge
+			currDistDir distanceDirection = distanceDirection{dist: math.MaxInt}
+		)
+
+		for edg, distDir := range unvisited {
+			if distDir.dist < currDistDir.dist {
+				currEdge = edg
+				currDistDir = distDir
+			}
+		}
+
+		for _, connEdge := range currEdge.connected {
+			_, ok := finalized[connEdge]
+			if ok {
+				continue
+			}
+
+			distDir := calcDistDir(currEdge, connEdge, currDistDir.dir)
+			distDir.dist += currDistDir.dist
+
+			existDistDir, ok := unvisited[connEdge]
+			if ok && existDistDir.dist < distDir.dist {
+				continue
+			}
+
+			unvisited[connEdge] = distDir
+		}
+
+		finalized[currEdge] = unvisited[currEdge]
+		delete(unvisited, currEdge)
+
+		if currEdge == d.endEdge {
+			break
+		}
+	}
+
+	return finalized[d.endEdge].dist
 }
 
 func (d *Day16) PartTwo() int {
 	return 0
+}
+
+func calcDistDir(start, end *edge, dir direction) distanceDirection {
+	res := distanceDirection{}
+
+	switch {
+	case start.y > end.y:
+		res.dist = start.y - end.y
+		res.dir = north
+	case start.x < end.x:
+		res.dist = end.x - start.x
+		res.dir = east
+	case start.y < end.y:
+		res.dist = end.y - start.y
+		res.dir = south
+	case start.x > end.x:
+		res.dist = start.x - end.x
+		res.dir = west
+	default:
+		panic("cant determine new direction")
+	}
+
+	if res.dir != dir {
+		res.dist += 1000
+	}
+
+	return res
 }

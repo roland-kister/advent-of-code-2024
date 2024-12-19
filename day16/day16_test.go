@@ -5,36 +5,29 @@ import (
 	"testing"
 )
 
-const example = `###############
-#.......#....E#
-#.#.###.#.###.#
-#.....#.#...#.#
-#.###.#####.#.#
-#.#.#.......#.#
-#.#.#####.###.#
-#...........#.#
-###.#.#####.#.#
-#...#.....#.#.#
-#.#.#.###.#.#.#
-#.....#...#.#.#
-#.###.#.#.#.#.#
-#S..#.....#...#
-###############`
-
-func TestLoadInput(t *testing.T) {
-	d := Day16{}
-	d.LoadInput(strings.NewReader(example))
-
-	// if !reflect.DeepEqual(d.wh, wh) {
-	// 	t.Fatalf("LoadInput() -> wh %v, want %v", d.wh, wh)
-	// }
-}
+const example = `#################
+#...#...#...#..E#
+#.#.#.#.#.#.#.#.#
+#.#.#.#...#...#.#
+#.#.#.#.###.#.#.#
+#...#.#.#.....#.#
+#.#.#.#.#.#####.#
+#.#...#.#.#.....#
+#.#.#####.#.###.#
+#.#.#.......#...#
+#.#.###.#####.###
+#.#.#...#.....#.#
+#.#.#.#####.###.#
+#.#.#.........#.#
+#.#.#.#########.#
+#S#.............#
+#################`
 
 func TestPartOne(t *testing.T) {
 	d := Day16{}
 	d.LoadInput(strings.NewReader(example))
 
-	out := 10092
+	out := 11048
 	actOut := d.PartOne()
 
 	if out != actOut {
@@ -46,7 +39,7 @@ func TestPartTwo(t *testing.T) {
 	d := Day16{}
 	d.LoadInput(strings.NewReader(example))
 
-	out := 9021
+	out := 0
 	actOut := d.PartTwo()
 
 	if out != actOut {
