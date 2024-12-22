@@ -5,7 +5,6 @@ package day18
 import (
 	"bufio"
 	"errors"
-	"fmt"
 	"io"
 	"math"
 	"strconv"
@@ -17,15 +16,18 @@ type position struct {
 	y int
 }
 
-const xMax = 70
-const yMax = 70
-
 type Day18 struct {
-	bytesPos []position
+	bytesPos  []position
+	xMax      int
+	yMax      int
+	obstCount int
 }
 
 func (d *Day18) LoadInput(input io.Reader) {
 	d.bytesPos = make([]position, 0)
+	d.xMax = 0
+	d.yMax = 0
+	d.obstCount = 0
 
 	scanner := bufio.NewScanner(input)
 	for scanner.Scan() {
@@ -42,32 +44,52 @@ func (d *Day18) LoadInput(input io.Reader) {
 		}
 
 		d.bytesPos = append(d.bytesPos, position{x, y})
+
+		if x > d.xMax {
+			d.xMax = x
+		}
+
+		if y > d.yMax {
+			d.yMax = y
+		}
 	}
 }
 
 func (d *Day18) PartOne() int {
-	dist, _ := d.solve(1024)
+	if d.obstCount == 0 {
+		d.obstCount = 1024
+	}
+
+	dist, _ := d.solve()
 
 	return dist
 }
 
 func (d *Day18) PartTwo() int {
-	for i := 1025; i < len(d.bytesPos); i++ {
-		_, err := d.solve(i)
-		if err != nil {
-			fmt.Printf("\tpart two = %d,%d\n", d.bytesPos[i-1].x, d.bytesPos[i-1].y)
-			break
+	res := 0
+
+	for i := d.obstCount; i < len(d.bytesPos); i++ {
+		d.obstCount = i
+		_, err := d.solve()
+		if err == nil {
+			continue
 		}
+
+		xStr := strconv.Itoa(d.bytesPos[i-1].x)
+		yStr := strconv.Itoa(d.bytesPos[i-1].y)
+
+		res, _ = strconv.Atoi(strings.Join([]string{xStr, yStr}, ""))
+		break
 	}
 
-	return 0
+	return res
 }
 
-func (d *Day18) solve(obstCount int) (int, error) {
+func (d *Day18) solve() (int, error) {
 	start := position{0, 0}
 
 	obstacles := make(map[position]bool)
-	for i := 0; i < obstCount; i++ {
+	for i := 0; i < d.obstCount; i++ {
 		obstacles[d.bytesPos[i]] = true
 	}
 
@@ -101,12 +123,12 @@ func (d *Day18) solve(obstCount int) (int, error) {
 		}
 
 		right := position{x: curr.x + 1, y: curr.y}
-		if isOk(right, finalized, obstacles) && curr.x < xMax {
+		if isOk(right, finalized, obstacles) && curr.x < d.xMax {
 			setDist(right, currDist+1, unvisited)
 		}
 
 		bottom := position{x: curr.x, y: curr.y + 1}
-		if isOk(bottom, finalized, obstacles) && curr.y < yMax {
+		if isOk(bottom, finalized, obstacles) && curr.y < d.yMax {
 			setDist(bottom, currDist+1, unvisited)
 		}
 
@@ -118,7 +140,7 @@ func (d *Day18) solve(obstCount int) (int, error) {
 		finalized[curr] = currDist
 		delete(unvisited, curr)
 
-		if curr.x == xMax && curr.y == yMax {
+		if curr.x == d.xMax && curr.y == d.yMax {
 			return currDist, nil
 		}
 

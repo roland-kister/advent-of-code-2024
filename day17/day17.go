@@ -4,8 +4,8 @@ package day17
 
 import (
 	"bufio"
-	"fmt"
 	"io"
+	"math"
 	"regexp"
 	"strconv"
 	"strings"
@@ -75,8 +75,10 @@ func (d *Day17) PartOne() int {
 	comp := d.comp.copy()
 	comp.exec()
 
-	fmt.Printf("\tpart one = %o\n", comp.output)
-	return comp.output
+	octalStr := strconv.FormatInt(int64(comp.output), 8)
+	res, _ := strconv.Atoi(octalStr)
+
+	return res
 }
 
 func (d *Day17) PartTwo() int {
@@ -86,30 +88,21 @@ func (d *Day17) PartTwo() int {
 		input += int(num)
 	}
 
-	min, max := 1, 7
-	for i := 0; i < octalDigits(input)-1; i++ {
-		min *= 8
-
-		max *= 8
-		max += 7
-	}
-
-	fmt.Printf("Input\n\toctal: %o\n\tdigits: %d\n\tdecimal: %d\n", input, octalDigits(input), input)
-	fmt.Printf("Min\n\toctal: %o\n\tdigits: %d\n\tdecimal: %d\n", min, octalDigits(min), min)
-	fmt.Printf("Max\n\toctal: %o\n\tdigits: %d\n\tdecimal: %d\n", max, octalDigits(max), max)
-
-	a := min
-	for ; a < max; a++ {
+	for a := 0; a < math.MaxInt; a++ {
 		comp := d.comp.copy()
 		comp.registerA = a
 		comp.exec()
 
 		if comp.output == input {
-			fmt.Printf("A\n\toctal: %o\n\tdigits: %d\n\tdecimal: %d\n", a, octalDigits(a), a)
+			return a
+		}
+
+		if a > 10_000 {
+			return -1
 		}
 	}
 
-	return a
+	return 0
 }
 
 func (c *computer) copy() *computer {
@@ -129,7 +122,6 @@ func (c *computer) copy() *computer {
 
 func (c *computer) exec() {
 	for c.instPointer < len(c.program) {
-		// fmt.Printf("INST [%d], OP [%d], A [%d], B [%d], C[%d]\n", c.program[c.instPointer], c.program[c.instPointer+1], c.registerA, c.registerB, c.registerC)
 
 		jump := c.program[c.instPointer] != 3
 
@@ -227,56 +219,4 @@ func (c *computer) comboOp() int {
 
 func (c *computer) literalOp() int {
 	return int(c.program[c.instPointer+1])
-}
-
-func octalDigits(n int) int {
-	switch {
-	case n == 00:
-		return 0
-	case n < 01:
-		return 0
-	case n < 010:
-		return 1
-	case n < 0100:
-		return 2
-	case n < 01_000:
-		return 3
-	case n < 010_000:
-		return 4
-	case n < 0100_000:
-		return 5
-	case n < 01_000_000:
-		return 6
-	case n < 010_000_000:
-		return 7
-	case n < 0100_000_000:
-		return 8
-	case n < 01_000_000_000:
-		return 9
-	case n < 010_000_000_000:
-		return 10
-	case n < 0100_000_000_000:
-		return 11
-	case n < 01_000_000_000_000:
-		return 12
-	case n < 010_000_000_000_000:
-		return 13
-	case n < 0100_000_000_000_000:
-		return 14
-	case n < 01_000_000_000_000_000:
-		return 15
-	case n < 010_000_000_000_000_000:
-		return 16
-	case n < 0100_000_000_000_000_000:
-		return 17
-	case n < 01_000_000_000_000_000_000:
-		return 18
-	case n < 010_000_000_000_000_000_000:
-		return 19
-	case n < 0100_000_000_000_000_000_000:
-		return 20
-	default:
-		return 21
-	}
-
 }

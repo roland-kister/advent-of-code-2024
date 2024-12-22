@@ -15,7 +15,7 @@ func TestPartOne(t *testing.T) {
 	d := Day17{}
 	d.LoadInput(strings.NewReader(example))
 
-	out := 645347976
+	out := 4635635210
 	actOut := d.PartOne()
 
 	if out != actOut {

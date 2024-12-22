@@ -34,6 +34,7 @@ const example = `5,4
 func TestPartOne(t *testing.T) {
 	d := Day18{}
 	d.LoadInput(strings.NewReader(example))
+	d.obstCount = 12
 
 	out := 22
 	actOut := d.PartOne()
@@ -47,7 +48,7 @@ func TestPartTwo(t *testing.T) {
 	d := Day18{}
 	d.LoadInput(strings.NewReader(example))
 
-	out := 0
+	out := 61
 	actOut := d.PartTwo()
 
 	if out != actOut {
