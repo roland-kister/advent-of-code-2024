@@ -9,13 +9,13 @@ const example = `Register A: 729
 Register B: 0
 Register C: 0
 
-Program: 0,1,5,4,3,0`
+Program: 0,3,5,4,3,0`
 
 func TestPartOne(t *testing.T) {
 	d := Day17{}
 	d.LoadInput(strings.NewReader(example))
 
-	out := 4635635210
+	out := 3310
 	actOut := d.PartOne()
 
 	if out != actOut {

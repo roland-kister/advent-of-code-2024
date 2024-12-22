@@ -16,12 +16,12 @@ type Day17 struct {
 }
 
 type computer struct {
-	registerA   int
-	registerB   int
-	registerC   int
-	program     []byte
-	instPointer int
-	output      int
+	registerA   uint64
+	registerB   uint64
+	registerC   uint64
+	program     []uint64
+	instPointer uint64
+	output      []uint64
 }
 
 func (d *Day17) LoadInput(input io.Reader) {
@@ -34,21 +34,21 @@ func (d *Day17) LoadInput(input io.Reader) {
 
 	scanner.Scan()
 	aMatch := registerRe.FindStringSubmatch(scanner.Text())
-	d.comp.registerA, err = strconv.Atoi(aMatch[1])
+	d.comp.registerA, err = strconv.ParseUint(aMatch[1], 10, 64)
 	if err != nil {
 		panic(err)
 	}
 
 	scanner.Scan()
 	bMatch := registerRe.FindStringSubmatch(scanner.Text())
-	d.comp.registerB, err = strconv.Atoi(bMatch[1])
+	d.comp.registerB, err = strconv.ParseUint(bMatch[1], 10, 64)
 	if err != nil {
 		panic(err)
 	}
 
 	scanner.Scan()
 	cMatch := registerRe.FindStringSubmatch(scanner.Text())
-	d.comp.registerC, err = strconv.Atoi(cMatch[1])
+	d.comp.registerC, err = strconv.ParseUint(cMatch[1], 10, 64)
 	if err != nil {
 		panic(err)
 	}
@@ -60,45 +60,37 @@ func (d *Day17) LoadInput(input io.Reader) {
 	scanner.Scan()
 	programMatch := programRe.FindStringSubmatch(scanner.Text())
 
-	d.comp.program = make([]byte, 0)
+	d.comp.program = make([]uint64, 0)
 	for _, numStr := range strings.Split(programMatch[1], ",") {
-		num, err := strconv.Atoi(numStr)
+		num, err := strconv.ParseUint(numStr, 10, 64)
 		if err != nil {
 			panic(err)
 		}
 
-		d.comp.program = append(d.comp.program, byte(num))
+		d.comp.program = append(d.comp.program, num)
 	}
 }
 
 func (d *Day17) PartOne() int {
 	comp := d.comp.copy()
-	comp.exec()
+	comp.exec(false)
 
-	octalStr := strconv.FormatInt(int64(comp.output), 8)
-	res, _ := strconv.Atoi(octalStr)
+	res := 0
+	for _, num := range comp.output {
+		res *= 10
+		res += int(num)
+	}
 
 	return res
 }
 
 func (d *Day17) PartTwo() int {
-	input := 0
-	for _, num := range d.comp.program {
-		input *= 8
-		input += int(num)
-	}
-
-	for a := 0; a < math.MaxInt; a++ {
+	for a := uint64(164_540_892_147_389); a < math.MaxUint64; a++ {
 		comp := d.comp.copy()
 		comp.registerA = a
-		comp.exec()
 
-		if comp.output == input {
-			return a
-		}
-
-		if a > 10_000 {
-			return -1
+		if comp.exec(true) {
+			return int(a)
 		}
 	}
 
@@ -110,9 +102,9 @@ func (c *computer) copy() *computer {
 		registerA:   c.registerA,
 		registerB:   c.registerB,
 		registerC:   c.registerC,
-		program:     make([]byte, len(c.program)),
+		program:     make([]uint64, len(c.program)),
 		instPointer: 0,
-		output:      0,
+		output:      make([]uint64, 0),
 	}
 
 	copy(newC.program, c.program)
@@ -120,92 +112,47 @@ func (c *computer) copy() *computer {
 	return newC
 }
 
-func (c *computer) exec() {
-	for c.instPointer < len(c.program) {
+func (c *computer) exec(partTwo bool) bool {
+	progLen := uint64(len(c.program))
 
-		jump := c.program[c.instPointer] != 3
-
+ExecLoop:
+	for c.instPointer < progLen {
 		switch c.program[c.instPointer] {
 		case 0:
-			c.adv()
+			c.registerA >>= c.comboOp()
 		case 1:
-			c.bxl()
+			c.registerB ^= c.literalOp()
 		case 2:
-			c.bst()
+			c.registerB = c.comboOp() & 7
 		case 3:
-			c.jnz()
+			if c.registerA != 0 {
+				c.instPointer = c.literalOp()
+				continue ExecLoop
+			}
 		case 4:
-			c.bxc()
+			c.registerB ^= c.registerC
 		case 5:
-			c.out()
+			c.output = append(c.output, c.comboOp()&7)
+			if partTwo && (len(c.output) > len(c.program) || c.program[len(c.output)-1] != c.output[len(c.output)-1]) {
+				return false
+			}
+
 		case 6:
-			c.bdv()
+			c.registerB = c.registerA >> c.comboOp()
 		case 7:
-			c.cdv()
+			c.registerC = c.registerA >> c.comboOp()
 		}
 
-		if jump {
-			c.instPointer += 2
-		}
-	}
-}
-
-func (c *computer) adv() {
-	num := 1 << c.comboOp()
-
-	c.registerA /= num
-}
-
-func (c *computer) bxl() {
-	num := c.literalOp()
-
-	c.registerB ^= num
-}
-
-func (c *computer) bst() {
-	num := c.comboOp()
-
-	c.registerB = num % 8
-}
-
-func (c *computer) jnz() {
-	if c.registerA == 0 {
 		c.instPointer += 2
-		return
 	}
 
-	num := c.literalOp()
-
-	c.instPointer = num
+	return true
 }
 
-func (c *computer) bxc() {
-	c.registerB ^= c.registerC
-}
-
-func (c *computer) out() {
-	num := c.comboOp()
-
-	c.output *= 8
-	c.output += num % 8
-}
-
-func (c *computer) bdv() {
-	num := 1 << c.comboOp()
-
-	c.registerB = c.registerA / num
-}
-
-func (c *computer) cdv() {
-	num := 1 << c.comboOp()
-
-	c.registerC = c.registerA / num
-}
-
-func (c *computer) comboOp() int {
+func (c *computer) comboOp() uint64 {
 	switch c.program[c.instPointer+1] {
 	case 0, 1, 2, 3:
-		return int(c.program[c.instPointer+1])
+		return uint64(c.program[c.instPointer+1])
 	case 4:
 		return c.registerA
 	case 5:
@@ -217,6 +164,6 @@ func (c *computer) comboOp() int {
 	}
 }
 
-func (c *computer) literalOp() int {
-	return int(c.program[c.instPointer+1])
+func (c *computer) literalOp() uint64 {
+	return uint64(c.program[c.instPointer+1])
 }
