@@ -37,8 +37,9 @@ func TestPartOne(t *testing.T) {
 func TestPartTwo(t *testing.T) {
 	d := Day20{}
 	d.LoadInput(strings.NewReader(example))
+	d.savedPicoS = 74
 
-	out := 0
+	out := 7
 	actOut := d.PartTwo()
 
 	if out != actOut {

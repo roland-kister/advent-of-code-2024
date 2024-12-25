@@ -21,6 +21,11 @@ type position struct {
 	y int
 }
 
+type cheat struct {
+	start position
+	end   position
+}
+
 type racetrack struct {
 	grid      [][]int
 	unvisited map[position]int
@@ -162,6 +167,35 @@ func (d *Day20) LoadInput(input io.Reader) {
 	}
 }
 
+func makeCheatMap(maxCheatPicoS int) map[position]int {
+	cheatMap := make(map[position]int, 0)
+	for y := -maxCheatPicoS; y <= maxCheatPicoS; y++ {
+		for x := -maxCheatPicoS; x <= maxCheatPicoS; x++ {
+			if x == 0 && y == 0 {
+				continue
+			}
+
+			xDist := x
+			if x < 0 {
+				xDist *= -1
+			}
+
+			yDist := y
+			if yDist < 0 {
+				yDist *= -1
+			}
+
+			if xDist+yDist > maxCheatPicoS {
+				continue
+			}
+
+			cheatMap[position{x, y}] = xDist + yDist
+		}
+	}
+
+	return cheatMap
+}
+
 func (d *Day20) PartOne() int {
 	startRt := d.initRt.copy()
 	startRt.dijkstra(d.start)
@@ -215,7 +249,40 @@ func (d *Day20) PartOne() int {
 	return total
 }
 
-func (d *Day20) PartTwo() int {
+const partTwoPicoS = 20
 
-	return 0
+func (d *Day20) PartTwo() int {
+	startRt := d.initRt.copy()
+	startRt.dijkstra(d.start)
+
+	endRt := d.initRt.copy()
+	endRt.dijkstra(d.end)
+
+	targetDist := startRt.get(d.end.x, d.end.y) - d.savedPicoS
+
+	cheatMap := makeCheatMap(partTwoPicoS)
+
+	total := 0
+	for y := range startRt.grid {
+		for x := range startRt.grid[y] {
+			startVal := startRt.get(x, y)
+			if startVal == oob || startVal == obs {
+				continue
+			}
+
+			for cheatPos, cheatDist := range cheatMap {
+				endVal := endRt.get(x+cheatPos.x, y+cheatPos.y)
+				if endVal < 0 {
+					continue
+				}
+
+				if startVal+cheatDist+endVal <= targetDist {
+					total++
+				}
+			}
+
+		}
+	}
+
+	return total
 }
