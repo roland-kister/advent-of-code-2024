@@ -169,17 +169,50 @@ func (d *Day20) PartOne() int {
 	endRt := d.initRt.copy()
 	endRt.dijkstra(d.end)
 
-	//for y := range startRt.grid {
-	//	for x := range startRt.grid[y] {
-	//		startVal := startRt.get(x, y)
-	//
-	//		topVal := endRt.get(x, y-2)
-	//		if topVal == oob || topVal == obs {}
-	//
-	//	}
-	//}
+	dist := startRt.get(d.end.x, d.end.y)
 
-	return 0
+	check := func(x, y, xDir, yDir, startVal int) bool {
+		if endRt.get(x+xDir, y+yDir) != obs {
+			return false
+		}
+
+		endVal := endRt.get(x+xDir*2, y+yDir*2)
+		if endVal == oob || endVal == obs {
+			return false
+		}
+
+		newDist := startVal + endVal + 2
+		return newDist <= dist-d.savedPicoS
+	}
+
+	total := 0
+
+	for y := range startRt.grid {
+		for x := range startRt.grid[y] {
+			startVal := startRt.get(x, y)
+			if startVal == oob || startVal == obs {
+				continue
+			}
+
+			if check(x, y, 0, -1, startVal) {
+				total++
+			}
+
+			if check(x, y, 1, 0, startVal) {
+				total++
+			}
+
+			if check(x, y, 0, 1, startVal) {
+				total++
+			}
+
+			if check(x, y, -1, 0, startVal) {
+				total++
+			}
+		}
+	}
+
+	return total
 }
 
 func (d *Day20) PartTwo() int {
