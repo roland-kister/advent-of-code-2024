@@ -4,7 +4,6 @@ package day20
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"math"
 )
@@ -69,21 +68,6 @@ func (rt *racetrack) copy() *racetrack {
 	}
 
 	return newRt
-}
-
-func (rt *racetrack) debug() {
-	for y := range rt.grid {
-		for x := range rt.grid[y] {
-			if rt.grid[y][x] == obs {
-				fmt.Print("  # ")
-			} else if rt.grid[y][x] == empty {
-				fmt.Print("    ")
-			} else {
-				fmt.Printf("%3d ", rt.grid[y][x])
-			}
-		}
-		fmt.Print("\n")
-	}
 }
 
 func (rt *racetrack) dijkstra(start position) {
