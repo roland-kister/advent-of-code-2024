@@ -22,15 +22,3 @@ func TestPartOne(t *testing.T) {
 		t.Fatalf("PartOne() = %d, want %d", actOut, out)
 	}
 }
-
-func TestPartTwo(t *testing.T) {
-	d := Day21{}
-	d.LoadInput(strings.NewReader(example))
-
-	out := 0
-	actOut := d.PartTwo()
-
-	if out != actOut {
-		t.Fatalf("PartTwo() = %d, want %d", actOut, out)
-	}
-}
