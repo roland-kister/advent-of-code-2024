@@ -4,18 +4,13 @@ package day21
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"math"
-	"regexp"
 	"slices"
-	"strconv"
 )
 
 type Day21 struct {
-	codes  [][]byte
-	dirMap map[currFromTo][]byte
-	numMap map[currFromTo][]byte
+	codes [][]byte
 }
 
 func (d *Day21) LoadInput(input io.Reader) {
@@ -30,91 +25,180 @@ func (d *Day21) LoadInput(input io.Reader) {
 		copy(d.codes[i], row)
 	}
 
-	d.dirMap = dirPad.buildCurrMap(dirPad)
-	d.numMap = numPad.buildCurrMap(dirPad)
+	fillDirMap()
+	fillNumMap()
 }
 
 func (d *Day21) PartOne() int {
-	return d.solve(4)
+	return d.solve(3)
 }
 
 func (d *Day21) PartTwo() int {
-	return d.solve(20)
+	return d.solve(26)
 }
 
-type fromTo struct {
-	from byte
-	to   byte
+func (d *Day21) solve(robotCount int) int {
+	sum := 0
+
+	for _, code := range d.codes {
+		currBtns = [26]int{aBtn, aBtn, aBtn, aBtn, aBtn, aBtn, aBtn, aBtn, aBtn, aBtn, aBtn, aBtn, aBtn, aBtn, aBtn, aBtn, aBtn, aBtn, aBtn, aBtn, aBtn, aBtn, aBtn, aBtn, aBtn, aBtn}
+		total = 0
+
+		num := 0
+		for _, val := range code {
+			switch val {
+			case 'A':
+				numRobot(aBtn, robotCount-1)
+			case '0':
+				numRobot(zeroBtn, robotCount-1)
+				num *= 10
+				num += 0
+			case '1':
+				numRobot(oneBtn, robotCount-1)
+				num *= 10
+				num += 1
+			case '2':
+				numRobot(twoBtn, robotCount-1)
+				num *= 10
+				num += 2
+			case '3':
+				numRobot(threeBtn, robotCount-1)
+				num *= 10
+				num += 3
+			case '4':
+				numRobot(fourBtn, robotCount-1)
+				num *= 10
+				num += 4
+			case '5':
+				numRobot(fiveBtn, robotCount-1)
+				num *= 10
+				num += 5
+			case '6':
+				numRobot(sixBtn, robotCount-1)
+				num *= 10
+				num += 6
+			case '7':
+				numRobot(sevenBtn, robotCount-1)
+				num *= 10
+				num += 7
+			case '8':
+				numRobot(eightBtn, robotCount-1)
+				num *= 10
+				num += 8
+			case '9':
+				numRobot(nineBtn, robotCount-1)
+				num *= 10
+				num += 9
+			}
+		}
+
+		sum += total * num
+	}
+
+	return sum
 }
 
-type currFromTo struct {
-	nextCurr byte
-	from     byte
-	to       byte
+var currBtns [26]int
+var total = 0
+
+func numRobot(btn int, id int) {
+	currBtn := currBtns[id]
+	nextCurrBtn := currBtns[id-1]
+
+	path := numMap[(nextCurrBtn<<numDoubleShift)|(currBtn<<numShift)|btn]
+	for path != 0 {
+		dirRobot(path&dirMask, id-1)
+		path >>= dirShift
+	}
+
+	currBtns[id] = btn
 }
 
-type keypad [][]byte
+func dirRobot(btn int, id int) {
+	currBtn := currBtns[id]
 
-const gap = ' '
+	nextCurrBtn := currBtn
+	if id > 0 {
+		nextCurrBtn = currBtns[id-1]
+	}
 
-var numPad = keypad{
-	{'7', '8', '9'},
-	{'4', '5', '6'},
-	{'1', '2', '3'},
-	{gap, '0', 'A'},
+	path := dirMap[(nextCurrBtn<<dirDoubleShift)|(currBtn<<dirShift)|btn]
+	for path != 0 {
+		if id == 0 {
+			total++
+		} else {
+			dirRobot(path&dirMask, id-1)
+		}
+		path >>= dirShift
+	}
+
+	currBtns[id] = btn
 }
 
-var dirPad = keypad{
-	{gap, '^', 'A'},
-	{'<', 'v', '>'},
-}
+const (
+	dirShift       int = 3
+	dirDoubleShift int = dirShift * 2
+	dirMask        int = 0b111
+	numShift       int = 4
+	numDoubleShift int = numShift * 2
+	numMask        int = 0b1111
+)
 
-type position struct {
-	y int
-	x int
-}
+var (
+	dirMap [512]int  = [512]int{}
+	numMap [2048]int = [2048]int{}
+)
 
-type robot struct {
-	pathMap  map[currFromTo][]byte
-	moves    []byte
-	currBtn  byte
-	next     *robot
-	previous *robot
-	kp       keypad
-	id       int
-}
+func fillDirMap() {
+	startEnd := getDirStartEnd()
 
-func (kp keypad) buildCurrMap(nextKp keypad) map[currFromTo][]byte {
-	kpMap := kp.buildMap()
-	nextKpMap := nextKp.buildMap()
+	maxRow := len(dirKeypad)
+	maxCol := len(dirKeypad[0])
 
-	currFromToMap := make(map[currFromTo][]byte)
-	for from := 0; from < len(kp)*len(kp[0]); from++ {
-		for to := 0; to < len(kp)*len(kp[0]); to++ {
-			for nextCurr := 0; nextCurr < len(nextKp)*len(nextKp[0]); nextCurr++ {
-				fromBtn := kp[from/len(kp[0])][from%len(kp[0])]
-				toBtn := kp[to/len(kp[0])][to%len(kp[0])]
-				nextCurrBtn := nextKp[nextCurr/len(nextKp[0])][nextCurr%len(nextKp[0])]
+	for start := 0; start < maxRow*maxCol; start++ {
+		startRow := start / maxCol
+		startCol := start % maxCol
+		startBtn := dirKeypad[startRow][startCol]
 
-				if fromBtn == gap || toBtn == gap || nextCurrBtn == gap {
+		if startBtn == gapBtn {
+			continue
+		}
+
+		for end := 0; end < maxRow*maxCol; end++ {
+			endRow := end / maxCol
+			endCol := end % maxCol
+			endBtn := dirKeypad[endRow][endCol]
+
+			if endBtn == gapBtn {
+				continue
+			}
+
+			paths := startEnd[(startBtn<<dirShift)|endBtn]
+
+			for next := 0; next < maxRow*maxCol; next++ {
+				nextRow := next / maxCol
+				nextCol := next % maxCol
+				nextBtn := dirKeypad[nextRow][nextCol]
+
+				if nextBtn == gapBtn {
 					continue
 				}
 
-				paths := kpMap[fromTo{fromBtn, toBtn}]
-
 				var (
 					minPathLen = math.MaxInt
-					minPath    []byte
+					minPath    []int
 				)
 
 				for _, path := range paths {
-					testNextCurrBtn := nextCurrBtn
+					testNextBtn := nextBtn
 
 					pathLen := 0
+
 					for _, btn := range path {
-						paths := nextKpMap[fromTo{testNextCurrBtn, btn}]
-						pathLen += len(paths[0])
-						testNextCurrBtn = btn
+						nextPaths := startEnd[(testNextBtn<<dirShift)|btn]
+						pathLen += len(nextPaths[0])
+
+						testNextBtn = btn
 					}
 
 					if pathLen < minPathLen {
@@ -123,38 +207,205 @@ func (kp keypad) buildCurrMap(nextKp keypad) map[currFromTo][]byte {
 					}
 				}
 
-				currFromToMap[currFromTo{nextCurrBtn, fromBtn, toBtn}] = minPath
+				optimalPath := 0
+				for i := len(minPath) - 1; i >= 0; i-- {
+					optimalPath = (optimalPath << dirShift) | minPath[i]
+				}
+
+				nextStartEnd := (nextBtn << (dirDoubleShift)) | (startBtn << dirShift) | endBtn
+				dirMap[nextStartEnd] = optimalPath
 			}
 		}
 	}
-
-	return currFromToMap
 }
 
-func (kp keypad) buildMap() map[fromTo][][]byte {
-	fromToMap := make(map[fromTo][][]byte)
-	for from := 0; from < len(kp)*len(kp[0]); from++ {
-		for to := 0; to < len(kp)*len(kp[0]); to++ {
-			fromBtn := kp[from/len(kp[0])][from%len(kp[0])]
-			toBtn := kp[to/len(kp[0])][to%len(kp[0])]
+func fillNumMap() {
+	dirStartEnd := getDirStartEnd()
 
-			if fromBtn == gap || toBtn == gap {
+	maxRow := len(numKeypad)
+	maxCol := len(numKeypad[0])
+
+	startEnd := [256][][]int{}
+	for start := 0; start < maxRow*maxCol; start++ {
+		startRow := start / maxCol
+		startCol := start % maxCol
+		startBtn := numKeypad[startRow][startCol]
+
+		if startBtn == gapBtn {
+			continue
+		}
+
+		for end := 0; end < maxRow*maxCol; end++ {
+			endRow := end / maxCol
+			endCol := end % maxCol
+			endBtn := numKeypad[endRow][endCol]
+
+			if endBtn == gapBtn {
 				continue
 			}
 
-			paths := kp.dijkstra(position{from / len(kp[0]), from % len(kp[0])}, position{to / len(kp[0]), to % len(kp[0])})
-			fromToMap[fromTo{fromBtn, toBtn}] = paths
+			dijkstra := newDijkstra(numKeypad, startRow, startCol, endRow, endCol)
+			paths := dijkstra.search()
+
+			startEnd[(startBtn<<numShift)|endBtn] = paths
 		}
 	}
 
-	return fromToMap
+	for start := 0; start < maxRow*maxCol; start++ {
+		startRow := start / maxCol
+		startCol := start % maxCol
+		startBtn := numKeypad[startRow][startCol]
+
+		if startBtn == gapBtn {
+			continue
+		}
+
+		for end := 0; end < maxRow*maxCol; end++ {
+			endRow := end / maxCol
+			endCol := end % maxCol
+			endBtn := numKeypad[endRow][endCol]
+
+			if endBtn == gapBtn {
+				continue
+			}
+
+			paths := startEnd[(startBtn<<numShift)|endBtn]
+
+			nextMaxRow := len(dirKeypad)
+			nextMaxCol := len(dirKeypad[0])
+			for next := 0; next < nextMaxRow*nextMaxCol; next++ {
+				nextRow := next / nextMaxCol
+				nextCol := next % nextMaxCol
+				nextBtn := dirKeypad[nextRow][nextCol]
+
+				if nextBtn == gapBtn {
+					continue
+				}
+
+				var (
+					minPathLen = math.MaxInt
+					minPath    []int
+				)
+
+				for _, path := range paths {
+					testNextBtn := nextBtn
+
+					pathLen := 0
+
+					for _, btn := range path {
+						nextPaths := dirStartEnd[(testNextBtn<<dirShift)|btn]
+						pathLen += len(nextPaths[0])
+
+						testNextBtn = btn
+					}
+
+					if pathLen < minPathLen {
+						minPathLen = pathLen
+						minPath = path
+					}
+				}
+
+				optimalPath := 0
+				for i := len(minPath) - 1; i >= 0; i-- {
+					optimalPath = (optimalPath << dirShift) | minPath[i]
+				}
+
+				nextStartEnd := (nextBtn << (numDoubleShift)) | (startBtn << numShift) | endBtn
+				numMap[nextStartEnd] = optimalPath
+			}
+		}
+	}
 }
 
-func (kp keypad) dijkstra(start, end position) [][]byte {
-	finalized := make(map[position]int)
+func getDirStartEnd() [64][][]int {
+	maxRow := len(dirKeypad)
+	maxCol := len(dirKeypad[0])
 
-	unvisited := make(map[position]int)
-	unvisited[start] = 0
+	startEnd := [64][][]int{}
+	for start := 0; start < maxRow*maxCol; start++ {
+		startRow := start / maxCol
+		startCol := start % maxCol
+		startBtn := dirKeypad[startRow][startCol]
+
+		if startBtn == gapBtn {
+			continue
+		}
+
+		for end := 0; end < maxRow*maxCol; end++ {
+			endRow := end / maxCol
+			endCol := end % maxCol
+			endBtn := dirKeypad[endRow][endCol]
+
+			if endBtn == gapBtn {
+				continue
+			}
+
+			dijkstra := newDijkstra(dirKeypad, startRow, startCol, endRow, endCol)
+			paths := dijkstra.search()
+
+			startEnd[(startBtn<<dirShift)|endBtn] = paths
+		}
+	}
+
+	return startEnd
+}
+
+const (
+	aBtn     = 1
+	upBtn    = 2
+	rightBtn = 3
+	downBtn  = 4
+	leftBtn  = 5
+	gapBtn   = math.MaxInt
+	sevenBtn = 7
+	eightBtn = 8
+	nineBtn  = 9
+	fourBtn  = 4
+	fiveBtn  = 5
+	sixBtn   = 6
+	oneBtn   = 11
+	twoBtn   = 2
+	threeBtn = 3
+	zeroBtn  = 10
+)
+
+var dirKeypad [][]int = [][]int{
+	{gapBtn, upBtn, aBtn},
+	{leftBtn, downBtn, rightBtn},
+}
+
+var numKeypad [][]int = [][]int{
+	{sevenBtn, eightBtn, nineBtn},
+	{fourBtn, fiveBtn, sixBtn},
+	{oneBtn, twoBtn, threeBtn},
+	{gapBtn, zeroBtn, aBtn},
+}
+
+type position struct {
+	row int
+	col int
+}
+
+type dijkstra struct {
+	keypad    [][]int
+	start     position
+	end       position
+	finalized map[position]int
+	unvisited map[position]int
+}
+
+func newDijkstra(keypad [][]int, startRow, startCol, endRow, endCol int) dijkstra {
+	return dijkstra{
+		keypad:    keypad,
+		start:     position{startRow, startCol},
+		end:       position{endRow, endCol},
+		finalized: make(map[position]int),
+		unvisited: make(map[position]int),
+	}
+}
+
+func (d dijkstra) search() [][]int {
+	d.unvisited[d.start] = 0
 
 	for {
 		var (
@@ -162,41 +413,47 @@ func (kp keypad) dijkstra(start, end position) [][]byte {
 			currDist = math.MaxInt
 		)
 
-		for pos, dist := range unvisited {
+		for pos, dist := range d.unvisited {
 			if currDist > dist {
-				currDist = dist
 				currPos = pos
+				currDist = dist
 			}
 		}
 
-		kp.explore(position{currPos.y - 1, currPos.x}, currDist+1, finalized, unvisited)
-		kp.explore(position{currPos.y, currPos.x - 1}, currDist+1, finalized, unvisited)
-		kp.explore(position{currPos.y + 1, currPos.x}, currDist+1, finalized, unvisited)
-		kp.explore(position{currPos.y, currPos.x + 1}, currDist+1, finalized, unvisited)
+		d.explore(position{currPos.row - 1, currPos.col}, currDist+1)
+		d.explore(position{currPos.row, currPos.col - 1}, currDist+1)
+		d.explore(position{currPos.row + 1, currPos.col}, currDist+1)
+		d.explore(position{currPos.row, currPos.col + 1}, currDist+1)
 
-		finalized[currPos] = currDist
-		delete(unvisited, currPos)
+		d.finalized[currPos] = currDist
+		delete(d.unvisited, currPos)
 
-		if currPos.y == end.y && currPos.x == end.x {
+		if currPos.row == d.end.row && currPos.col == d.end.col {
 			break
 		}
 	}
 
-	pathToNum := func(path []byte) int {
+	paths := d.findPaths(d.start)
+	for i := range paths {
+		slices.Reverse(paths[i])
+		paths[i] = append(paths[i], aBtn)
+	}
+
+	pathToNum := func(path []int) int {
 		num := 0
 		for _, btn := range path {
 			score := 0
 
 			switch btn {
-			case '<':
+			case leftBtn:
 				score = 1
-			case 'v':
+			case downBtn:
 				score = 2
-			case '^':
+			case upBtn:
 				score = 3
-			case '>':
+			case rightBtn:
 				score = 4
-			case 'A':
+			case aBtn:
 				score = 5
 			}
 
@@ -211,145 +468,69 @@ func (kp keypad) dijkstra(start, end position) [][]byte {
 		return num
 	}
 
-	paths := kp.findPaths(start, end, finalized)
-	for i := range paths {
-		slices.Reverse(paths[i])
-		paths[i] = append(paths[i], 'A')
-	}
-
-	slices.SortFunc(paths, func(a, b []byte) int {
+	slices.SortFunc(paths, func(a, b []int) int {
 		return pathToNum(a) - pathToNum(b)
 	})
 
 	return paths
 }
 
-func (d *Day21) solve(numOfRobots int) int {
-	re := regexp.MustCompile(`0?(\d+)A`)
-
-	total := 0
-	for _, code := range d.codes {
-		numOfPresses := d.enterCode(numOfRobots, code)
-
-		match := re.FindStringSubmatch(string(code))
-		numStr := match[1]
-
-		num, err := strconv.Atoi(numStr)
-		if err != nil {
-			panic(err)
-		}
-
-		fmt.Printf("%d * %d = %d\n", numOfPresses, num, numOfPresses*num)
-
-		total += numOfPresses * num
-	}
-
-	return total
-}
-
-func (kp keypad) explore(pos position, dist int, finalized, unvisited map[position]int) {
-	if pos.y < 0 || pos.y >= len(kp) || pos.x < 0 || pos.x >= len(kp[pos.y]) || kp[pos.y][pos.x] == gap {
+func (d dijkstra) explore(pos position, dist int) {
+	if pos.row < 0 || pos.row >= len(d.keypad) || pos.col < 0 || pos.col >= len(d.keypad[pos.row]) {
 		return
 	}
 
-	_, ok := finalized[pos]
+	if d.keypad[pos.row][pos.col] == gapBtn {
+		return
+	}
+
+	_, ok := d.finalized[pos]
 	if ok {
 		return
 	}
 
-	oldDist, ok := unvisited[pos]
+	oldDist, ok := d.unvisited[pos]
 	if ok && oldDist < dist {
 		return
 	}
 
-	unvisited[pos] = dist
+	d.unvisited[pos] = dist
 }
 
-func (kp keypad) findPaths(pos, endPos position, finalized map[position]int) [][]byte {
-	if pos.y == endPos.y && pos.x == endPos.x {
-		return [][]byte{{}}
+func (d dijkstra) findPaths(pos position) [][]int {
+	if pos.row == d.end.row && pos.col == d.end.col {
+		return [][]int{{}}
 	}
 
-	currDist := finalized[pos]
+	dist := d.finalized[pos]
 
-	res := kp.findPathsSub(position{pos.y - 1, pos.x}, endPos, '^', currDist, finalized)
-	res = append(res, kp.findPathsSub(position{pos.y, pos.x + 1}, endPos, '>', currDist, finalized)...)
-	res = append(res, kp.findPathsSub(position{pos.y + 1, pos.x}, endPos, 'v', currDist, finalized)...)
-	res = append(res, kp.findPathsSub(position{pos.y, pos.x - 1}, endPos, '<', currDist, finalized)...)
+	res := d.findPathsSub(position{pos.row - 1, pos.col}, upBtn, dist)
+	res = append(res, d.findPathsSub(position{pos.row, pos.col + 1}, rightBtn, dist)...)
+	res = append(res, d.findPathsSub(position{pos.row + 1, pos.col}, downBtn, dist)...)
+	res = append(res, d.findPathsSub(position{pos.row, pos.col - 1}, leftBtn, dist)...)
 
 	return res
 
 }
 
-func (kp keypad) findPathsSub(pos, endPos position, direction byte, currDist int, finalized map[position]int) [][]byte {
-	if pos.y < 0 || pos.y >= len(kp) || pos.x < 0 || pos.x >= len(kp[pos.y]) || kp[pos.y][pos.x] == gap {
-		return [][]byte{}
+func (d dijkstra) findPathsSub(pos position, dir int, currDist int) [][]int {
+	if pos.row < 0 || pos.row >= len(d.keypad) || pos.col < 0 || pos.col >= len(d.keypad[pos.row]) {
+		return [][]int{}
 	}
 
-	nextDist, ok := finalized[pos]
+	if d.keypad[pos.row][pos.col] == gapBtn {
+		return [][]int{}
+	}
+
+	nextDist, ok := d.finalized[pos]
 	if !ok || nextDist <= currDist {
-		return [][]byte{}
+		return [][]int{}
 	}
 
-	paths := kp.findPaths(pos, endPos, finalized)
+	paths := d.findPaths(pos)
 	for i := range paths {
-		paths[i] = append(paths[i], direction)
+		paths[i] = append(paths[i], dir)
 	}
 
 	return paths
-}
-
-func (d *Day21) enterCode(numOfRobots int, code []byte) int {
-	robots := make([]*robot, 0)
-
-	numRobot := &robot{
-		pathMap: d.numMap,
-		moves:   make([]byte, 0),
-		currBtn: 'A',
-		kp:      numPad,
-	}
-
-	robots = append(robots, numRobot)
-
-	for range numOfRobots - 2 {
-		robots = append(robots, &robot{
-			pathMap: d.dirMap,
-			moves:   make([]byte, 0),
-			currBtn: 'A',
-			kp:      dirPad,
-		})
-	}
-
-	for i := range numOfRobots - 2 {
-		robots[i].next = robots[i+1]
-		robots[i].id = i
-	}
-	robots[len(robots)-1].id = len(robots) - 1
-
-	for _, btn := range code {
-		fmt.Printf("%c\n", btn)
-		numRobot.press(btn)
-	}
-
-	return len(robots[len(robots)-1].moves)
-}
-
-func (r *robot) press(nextBtn byte) {
-	nextCurr := byte('A')
-	if r.next != nil {
-		nextCurr = r.next.currBtn
-	}
-
-	path := r.pathMap[currFromTo{nextCurr, r.currBtn, nextBtn}]
-	r.moves = append(r.moves, path...)
-
-	r.currBtn = nextBtn
-
-	if r.next == nil {
-		return
-	}
-
-	for _, btn := range path {
-		r.next.press(btn)
-	}
 }
