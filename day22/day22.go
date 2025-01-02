@@ -16,7 +16,7 @@ func (d *Day22) LoadInput(input io.Reader) {
 	d.nums = make([]int, 0)
 
 	scanner := bufio.NewScanner(input)
-	for i := 0; scanner.Scan(); i++ {
+	for scanner.Scan() {
 		numStr := scanner.Text()
 
 		num, err := strconv.Atoi(numStr)
@@ -41,7 +41,7 @@ func (d *Day22) PartOne() int {
 		sum += num
 	}
 
-	return int(sum)
+	return sum
 }
 
 func (d *Day22) PartTwo() int {
